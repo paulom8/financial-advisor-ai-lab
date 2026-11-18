@@ -14,6 +14,7 @@ Before project work, read [README.md](README.md) and the relevant documents unde
 - Do not implement financial recommendations as authoritative advice. Keep generated content reviewable by a human.
 - Do not install dependencies, implement features, or make repository changes without clear user authorization. Follow any more specific current user instruction.
 - Do not run tests unless the user asks for testing or verification.
+- When using Git with the user, show the exact command(s) and briefly explain what each command did or will do. Include commands run directly as well as commands suggested for the user to run.
 
 ## Documentation maintenance
 

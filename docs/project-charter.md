@@ -18,7 +18,7 @@ Build a simple financial-advisor simulation as a practical laboratory for learni
 - The application should remain simple, likely one or two screens; complexity belongs in purposeful learning experiments rather than unnecessary product surface.
 - Learning all 15 categories is a must, but their order can be adjusted when a specific dependency or application step makes a detour useful. Follow the detour policy in the roadmap.
 - Do not implement, install dependencies, or modify the repository without user approval.
-- The user wants a `main` and a `development` branch, with temporary feature branches for individual coding tasks. This is a requested workflow; repository branch state has not been inspected or changed as part of this documentation task.
+- For now, use `main` as the integration branch and temporary feature branches for individual tasks. Push feature branches and use pull requests to review and merge into `main`. A separate `development` branch is not needed for the current learning project; revisit it if a distinct integration or staging workflow becomes useful.
 
 ## Scope
 
@@ -33,6 +33,6 @@ The eventual laboratory may explore model interaction, prompts, assistants, tool
 
 ## Status
 
-**Confirmed:** purpose, educational nature, synthetic-data boundary, incremental learning, coverage of all 15 categories, flexible sequencing with explained detours, and requested branch model.
+**Confirmed:** purpose, educational nature, synthetic-data boundary, incremental learning, coverage of all 15 categories, flexible sequencing with explained detours, and the current `main` plus temporary feature-branch workflow.
 
 **Proposed:** the detailed application structure and implementation sequence in [architecture](architecture.md) and [learning roadmap](learning-roadmap.md).
