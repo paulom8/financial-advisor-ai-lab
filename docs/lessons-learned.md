@@ -60,6 +60,8 @@ As the project evolves, update the requirements, architecture decisions, API con
 
 Otherwise, Codex may work from outdated assumptions and reintroduce previously corrected problems.
 
+Keep project documentation organised by purpose. Separate Markdown files can cover working flow, project rules, architecture, roadmap and progress, or other important topics. This makes each source of information easier to find and update without mixing unrelated instructions.
+
 10. Learn to diagnose problems instead of blindly prompting AI
 
 When something doesn't work, investigate the logs, errors, tests, and recent changes.
