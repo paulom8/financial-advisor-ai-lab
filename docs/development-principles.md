@@ -2,31 +2,41 @@
 
 ## Learning workflow
 
-- Build and study one small concept or feature at a time. State what it does, why it matters, what is application code versus a provider/development-tool capability, and what the experiment should demonstrate.
-- Keep the app simple. Use the financial-advisor scenario as a coherent source of synthetic examples, not as the reason to prioritise a technology over industry value.
-- After each experiment, explain the result and update the [roadmap tracker](learning-roadmap.md) accurately before proposing the next step.
-- Explain and record any temporary roadmap detour, then return to the baseline after it is complete.
-- Do not silently treat a suggestion, generated plan, or implementation detail as an approved decision.
+- Work incrementally: propose or implement one small AI concept or feature at a time. Explain its purpose, what the learner should notice, and which capability or industry pattern it teaches.
+- Give the user room to inspect and learn before moving on to another concept.
+- Distinguish the AI/provider capability from the application code or development tool used to expose it.
+- Use the industry-prioritized roadmap as the baseline. The baseline reflects real-world relevance, industry adoption, practical usefulness, and career value—not ease or implementation effort.
+- Before a detour, explain how it supports a dependency, avoids rework, or improves the application's learning flow; describe the expected learning outcome and affected roadmap items. Return to the baseline after a temporary detour unless the user approves a change.
+- After an experiment, explain what happened and update the [roadmap tracker](learning-roadmap.md) accurately.
+- Keep suggestions, proposals, confirmed decisions, and open questions distinct.
+
+## AI experiments and software
+
+- The user already knows programming. Do not turn the project into programming lessons; explain implementation detail only when it helps answer an AI learning question or the user asks.
+- Keep the application experience clear and focused on exploring AI. Use the React page, a provider interface, or both depending on what best demonstrates the concept.
+- Do not avoid an industry-relevant AI concept just because it needs an API, SDK, connector, database, or other supporting capability. Explain the role of that dependency and check whether it already exists before installing anything.
+- Avoid adding technology only for complexity. Prefer purposeful integrations and explain their practical value.
+- Do not install dependencies or change the repository without clear user authorization. Follow any more specific current instruction.
 
 ## Safety and quality
 
-- Use synthetic client information only. Never put real financial or personal client information into prompts, documents, test fixtures, logs, or screenshots.
-- Keep model-produced findings clearly distinguishable from verified facts. Contradictions and follow-up questions are suggestions for advisor review.
-- Human review is required for any eventual draft financial plan. The prototype must not present itself as providing production financial advice.
-- Validate model outputs and tool arguments in application code. Model output is not authorization; tools should be narrow and explicitly allowlisted.
-- Introduce tests and evaluation with the relevant feature. Do not claim quality from a few informal examples; use repeatable synthetic cases where practical.
+- Use synthetic client information only. Never put real personal or financial client data into prompts, documents, test fixtures, logs, or screenshots.
+- This is an educational prototype, not a production financial-advice service. AI-generated findings and draft plans are suggestions for human review, not authoritative advice.
+- Keep AI outputs distinguishable from verified facts. Discuss uncertainty, source support, and limitations.
+- Validate model outputs and tool arguments where application behavior depends on them. A model request does not authorize an action; keep tools bounded and explicit.
+- Use repeatable synthetic examples when comparing behavior. Do not claim broad quality from a few informal trials.
 - Keep secrets out of source control and avoid sending unnecessary data to external services.
 
 ## Git and development environment
 
-**Current branch strategy:** use `main` as the integration branch and create a temporary feature branch for each task. Push the feature branch and review it through a pull request before merging to `main`. A separate `development` branch is not needed for the current learning project; revisit it if a distinct integration or staging workflow becomes useful. Show the exact Git command whenever one is run or suggested, and briefly explain its effect so the user can learn Git through the work.
+**Current branch strategy:** use `main` as the integration branch and a temporary feature branch for each task. Push feature branches and review them through pull requests before merging to `main`. A separate `development` branch is not needed unless a distinct integration or staging workflow becomes useful. Show each exact Git command whenever one is run or suggested, and briefly explain its effect.
 
-**Development environment:** local development first; Docker and cloud hosting are intended learning topics for later. Dependency manager, runtime versions, and exact local setup are unresolved until implementation planning.
+**Development environment:** local development first. Docker and cloud hosting may be explored later when they support an industry-relevant learning objective. Check current tools and dependencies before proposing installations.
 
 ## Codex collaboration and documentation
 
 - Read persistent project instructions and relevant source-of-truth documents before work.
-- Before a substantial implementation, describe the small scope and the learning goal. Work only within the user's authorization; do not install packages or expand scope without approval.
-- Report changes, rationale, and verification honestly. Do not run tests unless asked to test or verify.
-- When the user approves a change to project objectives, scope, architecture, dependencies, development practices, or roadmap priorities, update the relevant document in the same task. Keep confirmed decisions, recommendations, and unresolved questions clearly separated.
-- Keep `AGENTS.md` concise and operational; place detailed project knowledge in the appropriate `docs/` file.
+- Before a substantial implementation, describe the small concept/feature and its learning purpose. Work only within user authorization.
+- Do not run tests unless the user asks for testing or verification. Report changes and verification honestly.
+- When the user approves a change to objectives, scope, architecture, dependencies, practices, or roadmap priorities, update the relevant document in the same task.
+- Keep `AGENTS.md` concise and operational; document project learning decisions in the appropriate source-of-truth file.

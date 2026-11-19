@@ -1,76 +1,68 @@
 # Architecture
 
-This document distinguishes the user's stated direction from architectural recommendations. A proposed choice is not a permanent commitment until the user approves it for implementation.
+This document distinguishes confirmed direction, current implementation, and proposals. The application is a learning environment for AI capabilities and their use in real applications. Keep architecture purposeful: use it to make an experiment work, not as a separate programming curriculum.
 
 ## Confirmed direction
-
-The user proposed the following stack and direction:
 
 - Frontend: React.
 - Backend: Python FastAPI.
 - Database: PostgreSQL.
 - Version control: Git and GitHub.
-- Docker and cloud hosting may be explored later; local development comes first.
-- AI provider choice is open. OpenAI, Anthropic, and Google were suggested as possible providers, but using all three is not required.
-- The system should eventually support experiments comparing models and possibly provider fallback, but these are learning goals, not first-version requirements.
-- For the first implementation, build a simple React page, a Python FastAPI backend, and a PostgreSQL database. Use a database named `financial_advisor_lab`, with a `Test` table containing an integer incrementing `id`, `description` (`varchar(255)`), and `date_inserted` (`datetime`). Seed one synthetic record and display all records on the page.
-- SQLAlchemy is selected for this small database experiment. The API initializes the table and inserts the sample record only when the table is empty.
-- Use Vite and npm for the initial React page.
-- The backend connects with a dedicated `financial_advisor_app` login role, separate from the PostgreSQL `postgres` administrator account. Keep its password in the ignored local environment file; the role owns only the `financial_advisor_lab` database.
+- Use local development first. Docker and cloud hosting may be explored later when they support a learning objective.
+- AI provider and model choice is open. OpenAI, Anthropic, and Google are possible providers to consider; these examples are not a mandate to use any specific provider or all three.
+- The system may eventually support experiments comparing models or providers. Add comparison or fallback behavior only when a concrete learning question makes it useful.
+- Use synthetic data only. Keep secrets on the backend when a provider API is connected.
+
+## Current implementation
+
+- React page built with Vite.
+- FastAPI backend with SQLAlchemy.
+- PostgreSQL database named `financial_advisor_lab`, using a dedicated `financial_advisor_app` login role and local ignored environment file for its password.
+- The `Test` table has an incrementing integer `id`, a `description` up to 255 characters, and a `date_inserted` timestamp. Startup initializes the table and inserts a synthetic sample only when the table is empty.
+- `GET /api/test-records` returns the table rows for display on the page.
+
+This first slice established a working page/API/database path. It is a useful base for AI experiments, not an instruction to keep expanding database features.
 
 ## Proposed architecture
 
-Start as a **modular monolith**, growing only when an experiment needs another component:
+The proposed direction is a simple modular monolith, growing only when an experiment needs another component:
 
 ```text
-React user interface
-        │ HTTP API
-        ▼
-FastAPI application
-  ├─ Advisor/client workflow
-  ├─ Deterministic validation and business rules
-  ├─ AI integration and versioned prompts (when introduced)
-  ├─ Explicitly allowlisted tool execution (when introduced)
-  ├─ Document processing and retrieval (later experiments)
-  └─ Evaluation and usage records (as needed)
+React learning page
         │
-        ├─ PostgreSQL (when persistence is useful)
-        └─ One or more model APIs (when AI experiments need them)
+        ▼
+FastAPI application ──► Model API / SDK
+        │                    │
+        ├─► PostgreSQL        └─► model capabilities
+        ├─► connectors, plugins, or MCP (when useful)
+        └─► bounded tool execution (when explored)
 ```
 
-This keeps the eventual shape understandable without requiring every component at the start. The initial experiment could be even smaller (for example, static text in the UI); no first feature or implementation sequence has yet been approved.
+A future AI experiment may connect the page through FastAPI to a model API or SDK, show model input and output, and allow comparison. Application logic should handle secrets, validate structured outputs, and control any tool execution. Add persistence only if saving synthetic experiments is useful. This is a proposed shape, not a requirement to build every component.
 
-## Design recommendations
+Relevant integration learning includes:
 
-- Keep basic data validation and repeatable rules in application code. Ask models to identify possible inconsistencies or suggest questions, and present those as reviewable suggestions.
-- When AI is introduced, keep API credentials on the backend, validate model outputs, handle provider failures, and record enough metadata to understand experiments.
-- Add a provider interface when a second provider or meaningful provider comparison is needed. Avoid a broad abstraction before provider differences matter.
-- Keep model requests and tools bounded. Validate tool arguments, enforce an allowlist, and require advisor confirmation for consequential writes.
-- Add persistence when saving clients, conversations, documents, or experiment results becomes useful. Use migrations when a database is introduced.
-- Add document ingestion and retrieval only when a learning experiment calls for them; retain source references for extracted or retrieved content.
-- Keep multi-agent workflows, deployment, and infrastructure expansion late and justified.
+- Calling model APIs and using provider SDKs.
+- Connecting external tools and services through APIs, connectors, or plugins.
+- Exploring MCP as an integration protocol when it supports a concrete experiment.
+- Comparing direct model calls, reusable provider features, and application-managed behavior.
 
-## Dependency outline (proposed)
+These are important parts of the learning roadmap, but do not build every integration layer in advance. Choose tools and patterns based on practical industry use and the experiment's purpose.
 
-```text
-React screen ──► API endpoint ──► model API
-                       │
-                       ├─► deterministic rules
-                       ├─► PostgreSQL persistence (when needed)
-                       ├─► tool execution (after API/model basics)
-                       ├─► document extraction ──► retrieval/RAG
-                       └─► logs/evaluations (introduced early in small form,
-                                            expanded with experiments)
-```
+## Design guidance
 
-Likely prerequisites: basic API calls precede provider comparison; model interaction and schemas precede robust tool loops; document extraction precedes retrieval over documents; tests and evaluation cases should grow alongside features rather than being postponed entirely. These are recommendations and may be adjusted with an explained roadmap detour.
+- Keep deterministic application rules separate from model suggestions. Show suggestions as reviewable, not verified facts.
+- When using an AI API, keep credentials out of the browser and repository, validate inputs/outputs, and handle provider errors.
+- Introduce an abstraction only when provider comparison or a real code need justifies it.
+- For tool use, define a narrow allowlist, validate arguments, and keep consequential actions under human control.
+- Add document extraction before retrieval over documents; retain source references when AI answers rely on sources.
+- Multi-agent workflows, deployment, and infrastructure expansion should have a clear learning reason. They are not required architecture milestones.
 
 ## Open questions
 
-- Which provider and model should power the first AI experiment, if any?
-- Which frontend build setup should be used as the React experiment grows?
-- What local development environment and container workflow should be adopted?
-- Which evaluation, logging, and privacy controls are appropriate for each experiment?
-- What hosting target, if any, should eventually be explored?
+- Which capability should the next experiment explore?
+- Which model/provider and access path best fit that capability and its industry use?
+- Should the experiment run in this page, a provider interface, or both for comparison?
+- Which API, SDK, connector, plugin, or MCP integration is relevant to the chosen experiment?
 
-Resolve these when they become relevant; do not invent answers in advance.
+Resolve these questions as they become relevant; keep proposals distinct from confirmed decisions.
