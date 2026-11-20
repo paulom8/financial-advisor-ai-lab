@@ -2,69 +2,62 @@
 
 ## Prioritisation principle
 
-The baseline order reflects a practical synthesis of broad industry use, transferable usefulness, durability, and likely career value. There is no authoritative universal ranking of these exact categories, and importance varies by job role. Industry evidence informs the ranking but does not make it a job-posting count. Examples include the [Stack Overflow Developer Survey](https://survey.stackoverflow.co/2026), [GitHub Octoverse](https://github.blog/news-insights/octoverse/octoverse-2025/), [Google DORA 2025 research](https://blog.google/innovation-and-ai/technology/developers-tools/dora-report-2025/), and [CNCF's 2025 cloud-native survey](https://www.cncf.io/reports/the-cncf-annual-cloud-native-survey/). Survey audiences and methods differ; interpret adoption figures in that context.
+The baseline order reflects real-world relevance, industry adoption, practical usefulness, and likely career value. It is a reasoned synthesis, not a universal ranking or a job-posting count. Importance varies by role and industry. Examples of industry evidence include the [Stack Overflow Developer Survey](https://survey.stackoverflow.co/2026), [GitHub Octoverse](https://github.blog/news-insights/octoverse/octoverse-2025/), [Google DORA 2025 research](https://blog.google/innovation-and-ai/technology/developers-tools/dora-report-2025/), and [CNCF's 2025 cloud-native survey](https://www.cncf.io/reports/the-cncf-annual-cloud-native-survey/). Their audiences and methods differ, so interpret figures in context.
 
-The rank is a **priority baseline, not a mandatory implementation sequence**. Establish durable software foundations while learning AI-specific capabilities. Do not mistake media attention or novelty for practical value.
+The ranking is **not based on which topics are easiest or quickest to implement**. Use it as a default learning priority, while keeping every category in scope. Some categories are AI capabilities; others are important tools and foundations for using AI in real applications. Software work supports the learning goal and is not a programming curriculum.
+
+AI capabilities and industry practices change quickly. Treat this as a living map, not an exhaustive or permanent list; revisit it when widely used capabilities or integration patterns emerge.
 
 ## Industry-prioritised categories
 
 | Rank | Category | Why it matters / status |
 |---:|---|---|
-| 1 | **10. Data processing and databases** | Core to nearly all applications; highly transferable. Established foundation. |
-| 2 | **13. AI development tools and coding agents** | AI-assisted coding is increasingly part of software work; review, debugging, and verification remain essential. Adopted and changing quickly. |
-| 3 | **15. AI application architecture and deployment** | Connects application components and makes software operable. Containers/cloud are broadly useful; orchestration depth is role-dependent. Established, with varying depth by role. |
-| 4 | **8. APIs, SDKs, MCP, connectors, plugins and integrations** | API/SDK integration is common software work; MCP and similar AI protocols are newer. Learn integration fundamentals first. Mixed: established APIs, emerging protocols. |
-| 5 | **11. AI evaluation, testing and observability** | AI behavior varies; evaluation and operational visibility help make features dependable. Important and maturing. |
-| 6 | **12. Security, privacy and governance** | Durable software responsibilities, with additional data and tool risks in AI applications. Established discipline; AI-specific practice evolving. |
-| 7 | **5. Tools and function calling** | Lets models request application actions or information; the application must validate and execute safely. Common AI application pattern. |
-| 8 | **1. AI interaction and model capabilities** | Text, streaming, structured responses, reasoning modes, and multimodal input are model interfaces. Core capabilities evolve rapidly; not all are needed in every app. |
-| 9 | **2. Prompt engineering and instructions** | Instructions and examples shape output. Useful, but strongest when combined with engineering, evaluation, and context design. Core practice, not a standalone architecture. |
-| 10 | **9. Automation and workflows** | Connects steps, systems, and people; AI autonomy should be bounded and justified. Established workflows; AI automation evolving. |
-| 11 | **6. Knowledge management, context and RAG** | Useful for grounding answers in a corpus, but adds ingestion, retrieval, and evaluation complexity. Valuable in knowledge-heavy applications; not universal. |
-| 12 | **7. Documents and multimodal AI** | Enables document/image/audio use cases, with added extraction, source, and privacy concerns. Useful, with uneven adoption by modality. |
-| 13 | **3. AI assistants and customisation** | Reusable instructions, context, and memory patterns are useful; vendor-specific assistant abstractions change. Concepts common, features vary. |
-| 14 | **14. Reusable AI components, skills and templates** | Reuse helps after behavior and boundaries are understood; specific formats can be tool-dependent. Useful practice, narrower direct demand. |
-| 15 | **4. AI agents and multi-agent architecture** | Can help multi-step tool workflows but add coordination, cost, latency, and failure modes. Emerging and task-dependent; not a default design. |
+| 1 | **10. Data processing and databases** | Applications need data to be collected, shaped, stored, and retrieved. Learn the AI-relevant role of data; do not expand database work without a learning reason. |
+| 2 | **13. AI development tools and coding agents** | AI-assisted software work is increasingly common. Learn how agents inspect, change, and verify work, and how to review their results. |
+| 3 | **15. AI application architecture and deployment** | AI features operate within real applications and services. Learn the main patterns and operational concerns at a useful level; infrastructure depth varies by role. |
+| 4 | **8. APIs, SDKs, MCP, connectors, plugins and integrations** | APIs and SDKs are common ways to use model providers and connect services; MCP and related AI integration patterns are newer. Learn established integration basics and understand where newer approaches fit. |
+| 5 | **11. AI evaluation, testing and observability** | AI outputs vary. Evaluation and operational visibility help teams understand quality, changes, failures, and usage. |
+| 6 | **12. Security, privacy and governance** | Data protection and security remain core responsibilities, with added risks from models, prompts, and tools. |
+| 7 | **5. Tools and function calling** | Models can request application actions or information. The application must validate requests and control execution. |
+| 8 | **1. AI interaction and model capabilities** | Learn text, structured responses, streaming, reasoning modes, and multimodal input/output; available capabilities vary by model. |
+| 9 | **2. Prompt engineering and instructions** | Instructions and examples shape model behavior. Learn by changing prompts and comparing results, alongside context and evaluation. |
+| 10 | **9. Automation and workflows** | AI can participate in multi-step processes involving systems and people. Learn how to bound automation and retain appropriate human review. |
+| 11 | **6. Knowledge management, context and RAG** | Retrieval can ground responses in a supplied corpus. It adds ingestion, retrieval, source handling, and evaluation work. |
+| 12 | **7. Documents and multimodal AI** | Models can work with documents, images, audio, and other modalities; extraction errors and privacy concerns matter. |
+| 13 | **3. AI assistants and customisation** | Reusable instructions, knowledge, and memory can shape an AI experience; provider-specific features change. |
+| 14 | **14. Reusable AI components, skills and templates** | Reuse can make useful AI behavior repeatable once its purpose and boundaries are understood. |
+| 15 | **4. AI agents and multi-agent architecture** | Agents can handle multi-step tasks, but coordination can add cost, delay, and failure modes. Learn them as a capability and use them where appropriate. |
 
 ## Flexible sequencing policy
 
-1. Use the ranking above as the default basis for learning priority.
-2. A topic may move earlier when a concrete feature has a dependency on it, a detour improves the application's development flow, or learning it now avoids meaningful rework.
-3. Before changing sequence, explain the reason, expected learning outcome, affected roadmap items, and whether the change is temporary.
-4. Keep the detour small. Do not add technology only to make the application more complex.
-5. After completing the feature or experiment, return to the baseline unless the user approves a revised priority.
-6. Record detours, postponements, and their rationale in the progress log below.
+1. Use the industry-prioritized ranking as the default basis for learning; do not reorder topics merely because one is easier to implement.
+2. A topic may move earlier when a concrete AI feature depends on it, the detour avoids meaningful rework, or it improves the application's learning flow.
+3. Before a detour, explain the reason, what the user will learn, which roadmap items are affected, and whether the change is temporary.
+4. Keep the implementation as small as the learning question allows, without avoiding useful capability exploration just because it requires supporting software.
+5. After a detour, return to the baseline unless the user approves a revised priority.
+6. Record detours, postponements, and their rationale in the progress tracker.
 
-## Suggested experiment order (flexible, not yet approved as a fixed build plan)
+## Suggested experiment order (flexible, not a fixed implementation plan)
 
-The following is a learning-friendly starting sequence, not an approved commitment to implement all steps in this exact order:
+1. Explore the current priority baseline one small concept at a time. Use AI development tools and coding agents to inspect or verify a focused behavior, then review what the agent did.
+2. Learn how model APIs and SDKs connect AI capabilities to applications; compare provider options when it answers a useful question.
+3. Explore model interaction, prompting, structured output, context, and multimodal capabilities through repeatable synthetic examples.
+4. Study evaluation, safety, and privacy alongside the capabilities they affect.
+5. Continue into tools/function calling, integrations (including MCP, connectors, and plugins), retrieval, assistants, and workflows.
+6. Explore bounded agents and multi-agent patterns when the baseline leads there and the use case justifies them.
 
-1. Show static text in a minimal React screen.
-2. Add a minimal FastAPI endpoint and display its response.
-3. Replace or augment that response with one model API call.
-4. Change a prompt/instruction and compare outputs on the same synthetic input.
-5. Add deterministic missing-field validation and present possible AI-identified contradictions/questions.
-6. Add structured output, validation, and focused evaluation examples.
-7. Persist synthetic client/conversation data in PostgreSQL when persistence is useful.
-8. Add a narrow, safe tool call; then introduce workflow orchestration.
-9. Add a second provider only when comparison is useful; measure latency, usage/cost, errors, and task-specific quality before considering fallback/routing.
-10. Add document extraction, then retrieval/RAG with source references.
-11. Explore assistant configurations, reusable components, and an integration/MCP experiment.
-12. Explore bounded agent workflows and multimodal/voice capabilities where useful.
-13. Expand security, testing, observability, CI/CD, Docker, and deployment as the application grows.
-
-Several experiments can be moved earlier or split into smaller lessons. The user should be able to inspect and understand one concept before moving on.
+The app may use a provider playground, this page, or both. Choose the simplest practical interface for the learning question. The purpose is understanding AI capabilities and industry patterns, not accumulating code.
 
 ## Progress tracker
 
-Status definitions: **Not started** = no experiment; **In progress** = current experiment; **Explored** = tried and discussed; **Completed** = experiment works and was reviewed; **Postponed** = intentionally deferred with a reason. Update this tracker as work is approved and completed. Do not imply completion from a discussion alone.
+Status definitions: **Not started** = no experiment; **In progress** = current experiment; **Explored** = tried and discussed; **Completed** = experiment works and was reviewed; **Postponed** = intentionally deferred with a short note. Update status based on what was actually tried; do not imply completion from discussion alone.
 
 | Rank | Category | Status | Notes / detour or postponement reason |
 |---:|---|---|---|
-| 1 | Data processing and databases | Explored | PostgreSQL `Test` table was initialized, one synthetic record was seeded, and the React page displayed it. |
-| 2 | AI development tools and coding agents | Not started | |
+| 1 | Data processing and databases | Explored | Existing PostgreSQL sample-record path is supporting application context. Confirm any example is synthetic before reusing it in an AI experiment. |
+| 2 | AI development tools and coding agents | Explored | Used Codex for a focused endpoint verification; broader coding-agent capabilities remain to explore. |
 | 3 | AI application architecture and deployment | Not started | |
-| 4 | APIs, SDKs, MCP, connectors, plugins and integrations | Explored | Used the OpenAI Python SDK behind a FastAPI route and consumed its response from React. |
+| 4 | APIs, SDKs, MCP, connectors, plugins and integrations | Explored | Called OpenAI through its Python SDK behind a FastAPI route and displayed the response in React. MCP, connectors, and plugins remain to explore. |
 | 5 | AI evaluation, testing and observability | Explored | Added repeatable API and frontend regression tests for the question flow. Model quality evaluation and observability remain open. |
 | 6 | Security, privacy and governance | Not started | |
 | 7 | Tools and function calling | Not started | |

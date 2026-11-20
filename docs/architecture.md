@@ -1,39 +1,74 @@
 # Architecture
 
-This document distinguishes the user's stated direction from architectural recommendations. A proposed choice is not a permanent commitment until the user approves it for implementation.
+This document distinguishes confirmed direction, current implementation, and proposals. The application is a learning environment for AI capabilities and their use in real applications. Keep architecture purposeful: use it to make an experiment work, not as a separate programming curriculum.
 
 ## Confirmed direction
 
-Development takes place locally using React, Vite and npm for the frontend, FastAPI for the backend, and Git and GitHub for version control.
+- Frontend: React.
+- Backend: Python FastAPI.
+- Database: PostgreSQL.
+- Version control: Git and GitHub.
+- Use local development first. Docker and cloud hosting may be explored later when they support a learning objective.
+- Use OpenAI for the single-question text experiment. Provider and model choices for future experiments remain open.
+- The system may eventually support experiments comparing models or providers. Add comparison or fallback behavior only when a concrete learning question makes it useful.
+- Use synthetic data only. Keep secrets on the backend when a provider API is connected.
+
+## Current implementation
+
+The React page uses Vite and npm. FastAPI exposes two routes.
 
 | FastAPI route | Request and result | External dependency |
 |---|---|---|
-| `POST /api/ask` | The React form submits `{"question": "..."}`. FastAPI validates it and returns `{"answer": "..."}` to the same page. | The backend calls the OpenAI Responses API using the official Python SDK. |
-| `GET /api/test-records` | Returns the records used in the introductory database experiment. | SQLAlchemy reads the PostgreSQL `"Test"` table. |
+| `POST /api/ask` | The React form submits `{"question": "..."}`. FastAPI validates it and returns `{"answer": "..."}` to the same page for human review. | The backend calls the OpenAI Responses API using the official Python SDK. |
+| `GET /api/test-records` | Returns the sample rows from the introductory database experiment. | SQLAlchemy reads the PostgreSQL `"Test"` table. |
 
-Each submission sends one independent question. FastAPI reuses its OpenAI client across requests and sets `store=False` to disable storage of the response for later retrieval through the Responses API. Questions and answers stay out of PostgreSQL. The backend reads `OPENAI_API_KEY` and the optional `OPENAI_MODEL` when it starts. The ignored backend environment file holds local credentials. See the [local setup instructions](../README.md#run-locally).
+Each submission sends one independent question. FastAPI reuses its OpenAI client across requests and sets `store=False` to disable storage of the response for later retrieval through the Responses API. Questions and answers stay out of PostgreSQL. The backend reads `OPENAI_API_KEY` and the optional `OPENAI_MODEL` at startup. The ignored backend environment file holds local credentials. See the [local setup instructions](../README.md#run-locally).
 
-The dedicated `financial_advisor_app` role owns the `financial_advisor_lab` database. The sample table has an incrementing integer `id`, a `description` of up to 255 characters, and a `date_inserted` timestamp. The API initializes the table and seeds a synthetic record when it is empty.
+The dedicated `financial_advisor_app` role owns the `financial_advisor_lab` database. The sample table has an incrementing integer `id`, a `description` of up to 255 characters, and a `date_inserted` timestamp. Startup initializes the table and inserts one synthetic record when it is empty.
 
 ## Proposed architecture
 
-Keep future advisor workflows, validation and provider calls in the same FastAPI application as long as that structure serves the experiments. Model comparisons and provider fallback remain possible learning exercises. Additional providers, deployment and the order of future experiments remain open.
+The proposed direction is a simple modular monolith, growing only when an experiment needs another component:
 
-## Design recommendations
+```text
+React learning page
+        │
+        ▼
+FastAPI application ──► Model API / SDK
+        │                    │
+        ├─► PostgreSQL        └─► model capabilities
+        ├─► connectors, plugins, or MCP (when useful)
+        └─► bounded tool execution (when explored)
+```
 
-- Keep basic data validation and repeatable rules in application code. Ask models to identify possible inconsistencies or suggest questions, and present those as reviewable suggestions.
-- For future evaluation experiments, decide which metadata helps explain model behaviour while protecting question and answer content.
-- Add a provider interface when a second provider or meaningful provider comparison is needed. Avoid a broad abstraction before provider differences matter.
-- Keep model requests and tools bounded. Validate tool arguments, enforce an allowlist, and require advisor confirmation for consequential writes.
-- Introduce migrations when an experiment changes an existing schema and needs to preserve its data. Add tables for clients, conversations, documents or results only when an approved feature needs them.
-- Add document ingestion and retrieval only when a learning experiment calls for them; retain source references for extracted or retrieved content.
-- Keep multi-agent workflows, deployment, and infrastructure expansion late and justified.
+Future experiments may compare model outputs or connect the existing FastAPI application to additional services. Application logic should handle secrets, validate structured outputs, and control any tool execution. Add persistence only if saving synthetic experiments is useful. This is a proposed shape, not a requirement to build every component.
+
+Relevant integration learning includes:
+
+- Calling model APIs and using provider SDKs.
+- Connecting external tools and services through APIs, connectors, or plugins.
+- Exploring MCP as an integration protocol when it supports a concrete experiment.
+- Comparing direct model calls, reusable provider features, and application-managed behavior.
+
+These are important parts of the learning roadmap, but do not build every integration layer in advance. Choose tools and patterns based on practical industry use and the experiment's purpose.
+
+## Design guidance
+
+- Keep deterministic application rules separate from model suggestions. Show suggestions as reviewable, not verified facts.
+- When using an AI API, keep credentials out of the browser and repository, validate inputs/outputs, and handle provider errors.
+- Introduce an abstraction only when provider comparison or a real code need justifies it.
+- For tool use, define a narrow allowlist, validate arguments, and keep consequential actions under human control.
+- Choose evaluation metadata that helps explain model behavior while protecting question and answer content.
+- Introduce migrations when an approved experiment changes an existing schema and needs to preserve data.
+- Add document extraction before retrieval over documents; retain source references when AI answers rely on sources.
+- Multi-agent workflows, deployment, and infrastructure expansion should have a clear learning reason. They are not required architecture milestones.
 
 ## Open questions
 
-- Which frontend build setup should be used as the React experiment grows?
-- What local development environment and container workflow should be adopted?
-- Which evaluation, logging, and privacy controls are appropriate for each experiment?
-- What hosting target, if any, should eventually be explored?
+- Which capability should the next experiment explore?
+- Which model/provider and access path best fit that capability and its industry use?
+- Should the experiment run in this page, a provider interface, or both for comparison?
+- Which API, SDK, connector, plugin, or MCP integration is relevant to the chosen experiment?
+- What evaluation, logging, privacy, and deployment choices would the experiment require?
 
-Resolve these when they become relevant; do not invent answers in advance.
+Resolve these questions as they become relevant; keep proposals distinct from confirmed decisions.
