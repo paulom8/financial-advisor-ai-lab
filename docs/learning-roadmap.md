@@ -57,11 +57,11 @@ Status definitions: **Not started** = no experiment; **In progress** = current e
 | 1 | Data processing and databases | Explored | Existing PostgreSQL sample-record path is supporting application context. Confirm any example is synthetic before reusing it in an AI experiment. |
 | 2 | AI development tools and coding agents | Explored | Used Codex for a focused endpoint verification; broader coding-agent capabilities remain to explore. |
 | 3 | AI application architecture and deployment | Not started | |
-| 4 | APIs, SDKs, MCP, connectors, plugins and integrations | In progress | FastAPI endpoint and browser/API path explored. Current focus: connect the backend to OpenAI; SDKs, MCP, connectors, and plugins remain to explore. |
-| 5 | AI evaluation, testing and observability | Not started | |
+| 4 | APIs, SDKs, MCP, connectors, plugins and integrations | Explored | Called OpenAI through its Python SDK behind a FastAPI route and displayed the response in React. MCP, connectors, and plugins remain to explore. |
+| 5 | AI evaluation, testing and observability | Explored | Added repeatable API and frontend regression tests for the question flow. Model quality evaluation and observability remain open. |
 | 6 | Security, privacy and governance | Not started | |
 | 7 | Tools and function calling | Not started | |
-| 8 | AI interaction and model capabilities | In progress | A basic text question-and-answer feature using OpenAI has been scoped; implementation has not started. |
+| 8 | AI interaction and model capabilities | Explored | Sent a synthetic question and reviewed the returned text in the React page. |
 | 9 | Prompt engineering and instructions | Not started | |
 | 10 | Automation and workflows | Not started | |
 | 11 | Knowledge management, context and RAG | Not started | |
@@ -69,3 +69,9 @@ Status definitions: **Not started** = no experiment; **In progress** = current e
 | 13 | AI assistants and customisation | Not started | |
 | 14 | Reusable AI components, skills and templates | Not started | |
 | 15 | AI agents and multi-agent architecture | Not started | |
+
+## Experiment log
+
+- **Database round trip — Explored.** The first React page displayed a seeded PostgreSQL record. The temporary detour into HTTP APIs let the browser read the same data through FastAPI.
+- **One question, one answer — Completed (20 November 2026).** The user saw a response in FastAPI's interactive docs, then confirmed the React page worked after correcting its API port and starting the backend. The walkthrough covered how a question reaches the model and how the answer returns to the page. This temporary detour combined API integration with model interaction so the user could inspect a real response. Future experiments follow the priority baseline.
+- **Question-flow regression review — Completed (20 November 2026).** Offline checks cover the SDK request, provider errors, validation and malformed responses. A live browser submission returned the expected answer to a fictional arithmetic question, and the database endpoint returned its sample row.

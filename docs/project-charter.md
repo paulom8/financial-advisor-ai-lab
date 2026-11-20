@@ -40,4 +40,4 @@ The roadmap covers data and application foundations that are useful for AI syste
 
 **Confirmed:** educational purpose; synthetic-data boundary; incremental, inspectable learning; industry relevance and practical usefulness as the priority basis; software as a means to explore AI; current `main` plus temporary feature-branch workflow.
 
-**Proposed:** the detailed learning sequence in [the roadmap](learning-roadmap.md) and application structure in [architecture](architecture.md). Individual providers, models, and integrations remain open until a specific experiment needs them.
+**Proposed:** the detailed sequence for future learning in [the roadmap](learning-roadmap.md) and extensions described in [architecture](architecture.md). The architecture also records the implemented PostgreSQL and OpenAI integrations. Choose further providers, models, and integrations as each experiment requires.

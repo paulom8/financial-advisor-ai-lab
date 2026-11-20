@@ -9,19 +9,22 @@ This document distinguishes confirmed direction, current implementation, and pro
 - Database: PostgreSQL.
 - Version control: Git and GitHub.
 - Use local development first. Docker and cloud hosting may be explored later when they support a learning objective.
-- AI provider and model choice is open. OpenAI, Anthropic, and Google are possible providers to consider; these examples are not a mandate to use any specific provider or all three.
+- Use OpenAI for the single-question text experiment. Provider and model choices for future experiments remain open.
 - The system may eventually support experiments comparing models or providers. Add comparison or fallback behavior only when a concrete learning question makes it useful.
 - Use synthetic data only. Keep secrets on the backend when a provider API is connected.
 
 ## Current implementation
 
-- React page built with Vite.
-- FastAPI backend with SQLAlchemy.
-- PostgreSQL database named `financial_advisor_lab`, using a dedicated `financial_advisor_app` login role and local ignored environment file for its password.
-- The `Test` table has an incrementing integer `id`, a `description` up to 255 characters, and a `date_inserted` timestamp. Startup initializes the table and inserts a synthetic sample only when the table is empty.
-- `GET /api/test-records` returns the table rows for display on the page.
+The React page uses Vite and npm. FastAPI exposes two routes.
 
-This first slice established a working page/API/database path. It is a useful base for AI experiments, not an instruction to keep expanding database features.
+| FastAPI route | Request and result | External dependency |
+|---|---|---|
+| `POST /api/ask` | The React form submits `{"question": "..."}`. FastAPI validates it and returns `{"answer": "..."}` to the same page for human review. | The backend calls the OpenAI Responses API using the official Python SDK. |
+| `GET /api/test-records` | Returns the sample rows from the introductory database experiment. | SQLAlchemy reads the PostgreSQL `"Test"` table. |
+
+Each submission sends one independent question. FastAPI reuses its OpenAI client across requests and sets `store=False` to disable storage of the response for later retrieval through the Responses API. Questions and answers stay out of PostgreSQL. The backend reads `OPENAI_API_KEY` and the optional `OPENAI_MODEL` at startup. The ignored backend environment file holds local credentials. See the [local setup instructions](../README.md#run-locally).
+
+The dedicated `financial_advisor_app` role owns the `financial_advisor_lab` database. The sample table has an incrementing integer `id`, a `description` of up to 255 characters, and a `date_inserted` timestamp. Startup initializes the table and inserts one synthetic record when it is empty.
 
 ## Proposed architecture
 
@@ -38,7 +41,7 @@ FastAPI application ──► Model API / SDK
         └─► bounded tool execution (when explored)
 ```
 
-A future AI experiment may connect the page through FastAPI to a model API or SDK, show model input and output, and allow comparison. Application logic should handle secrets, validate structured outputs, and control any tool execution. Add persistence only if saving synthetic experiments is useful. This is a proposed shape, not a requirement to build every component.
+Future experiments may compare model outputs or connect the existing FastAPI application to additional services. Application logic should handle secrets, validate structured outputs, and control any tool execution. Add persistence only if saving synthetic experiments is useful. This is a proposed shape, not a requirement to build every component.
 
 Relevant integration learning includes:
 
@@ -55,6 +58,8 @@ These are important parts of the learning roadmap, but do not build every integr
 - When using an AI API, keep credentials out of the browser and repository, validate inputs/outputs, and handle provider errors.
 - Introduce an abstraction only when provider comparison or a real code need justifies it.
 - For tool use, define a narrow allowlist, validate arguments, and keep consequential actions under human control.
+- Choose evaluation metadata that helps explain model behavior while protecting question and answer content.
+- Introduce migrations when an approved experiment changes an existing schema and needs to preserve data.
 - Add document extraction before retrieval over documents; retain source references when AI answers rely on sources.
 - Multi-agent workflows, deployment, and infrastructure expansion should have a clear learning reason. They are not required architecture milestones.
 
@@ -64,5 +69,6 @@ These are important parts of the learning roadmap, but do not build every integr
 - Which model/provider and access path best fit that capability and its industry use?
 - Should the experiment run in this page, a provider interface, or both for comparison?
 - Which API, SDK, connector, plugin, or MCP integration is relevant to the chosen experiment?
+- What evaluation, logging, privacy, and deployment choices would the experiment require?
 
 Resolve these questions as they become relevant; keep proposals distinct from confirmed decisions.

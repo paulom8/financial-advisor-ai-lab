@@ -14,6 +14,7 @@ Before project work, read [README.md](README.md) and the relevant documents unde
 - Do not present generated financial content as authoritative advice. Keep it reviewable by a human.
 - Check existing tools and dependencies before installing anything. Do not install dependencies, implement features, or make repository changes without clear user authorization. Follow any more specific current user instruction.
 - Do not run tests unless the user asks for testing or verification. When verification is requested, state acceptance criteria first and ask before running if the user asks for approval.
+- When an error is reported, trace the actual code and runtime path. Use the available evidence to diagnose paths, missing components, configuration, network boundaries, and logic. Respect the user's verification instructions.
 - When using Git, show each exact command run or suggested and briefly explain what it did or will do.
 
 ## Documentation maintenance
