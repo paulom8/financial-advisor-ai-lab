@@ -4,70 +4,33 @@ This document distinguishes the user's stated direction from architectural recom
 
 ## Confirmed direction
 
-The user proposed the following stack and direction:
+Development takes place locally using React, Vite and npm for the frontend, FastAPI for the backend, and Git and GitHub for version control.
 
-- Frontend: React.
-- Backend: Python FastAPI.
-- Database: PostgreSQL.
-- Version control: Git and GitHub.
-- Docker and cloud hosting may be explored later; local development comes first.
-- AI provider choice is open. OpenAI, Anthropic, and Google were suggested as possible providers, but using all three is not required.
-- The system should eventually support experiments comparing models and possibly provider fallback, but these are learning goals, not first-version requirements.
-- For the first implementation, build a simple React page, a Python FastAPI backend, and a PostgreSQL database. Use a database named `financial_advisor_lab`, with a `Test` table containing an integer incrementing `id`, `description` (`varchar(255)`), and `date_inserted` (`datetime`). Seed one synthetic record and display all records on the page.
-- SQLAlchemy is selected for this small database experiment. The API initializes the table and inserts the sample record only when the table is empty.
-- Use Vite and npm for the initial React page.
-- The backend connects with a dedicated `financial_advisor_app` login role, separate from the PostgreSQL `postgres` administrator account. Keep its password in the ignored local environment file; the role owns only the `financial_advisor_lab` database.
+| FastAPI route | Request and result | External dependency |
+|---|---|---|
+| `POST /api/ask` | The React form submits `{"question": "..."}`. FastAPI validates it and returns `{"answer": "..."}` to the same page. | The backend calls the OpenAI Responses API using the official Python SDK. |
+| `GET /api/test-records` | Returns the records used in the introductory database experiment. | SQLAlchemy reads the PostgreSQL `"Test"` table. |
+
+Each submission sends one independent question. FastAPI reuses its OpenAI client across requests and sets `store=False` to disable storage of the response for later retrieval through the Responses API. Questions and answers stay out of PostgreSQL. The backend reads `OPENAI_API_KEY` and the optional `OPENAI_MODEL` when it starts. The ignored backend environment file holds local credentials. See the [local setup instructions](../README.md#run-locally).
+
+The dedicated `financial_advisor_app` role owns the `financial_advisor_lab` database. The sample table has an incrementing integer `id`, a `description` of up to 255 characters, and a `date_inserted` timestamp. The API initializes the table and seeds a synthetic record when it is empty.
 
 ## Proposed architecture
 
-Start as a **modular monolith**, growing only when an experiment needs another component:
-
-```text
-React user interface
-        │ HTTP API
-        ▼
-FastAPI application
-  ├─ Advisor/client workflow
-  ├─ Deterministic validation and business rules
-  ├─ AI integration and versioned prompts (when introduced)
-  ├─ Explicitly allowlisted tool execution (when introduced)
-  ├─ Document processing and retrieval (later experiments)
-  └─ Evaluation and usage records (as needed)
-        │
-        ├─ PostgreSQL (when persistence is useful)
-        └─ One or more model APIs (when AI experiments need them)
-```
-
-This keeps the eventual shape understandable without requiring every component at the start. The initial experiment could be even smaller (for example, static text in the UI); no first feature or implementation sequence has yet been approved.
+Keep future advisor workflows, validation and provider calls in the same FastAPI application as long as that structure serves the experiments. Model comparisons and provider fallback remain possible learning exercises. Additional providers, deployment and the order of future experiments remain open.
 
 ## Design recommendations
 
 - Keep basic data validation and repeatable rules in application code. Ask models to identify possible inconsistencies or suggest questions, and present those as reviewable suggestions.
-- When AI is introduced, keep API credentials on the backend, validate model outputs, handle provider failures, and record enough metadata to understand experiments.
+- For future evaluation experiments, decide which metadata helps explain model behaviour while protecting question and answer content.
 - Add a provider interface when a second provider or meaningful provider comparison is needed. Avoid a broad abstraction before provider differences matter.
 - Keep model requests and tools bounded. Validate tool arguments, enforce an allowlist, and require advisor confirmation for consequential writes.
-- Add persistence when saving clients, conversations, documents, or experiment results becomes useful. Use migrations when a database is introduced.
+- Introduce migrations when an experiment changes an existing schema and needs to preserve its data. Add tables for clients, conversations, documents or results only when an approved feature needs them.
 - Add document ingestion and retrieval only when a learning experiment calls for them; retain source references for extracted or retrieved content.
 - Keep multi-agent workflows, deployment, and infrastructure expansion late and justified.
 
-## Dependency outline (proposed)
-
-```text
-React screen ──► API endpoint ──► model API
-                       │
-                       ├─► deterministic rules
-                       ├─► PostgreSQL persistence (when needed)
-                       ├─► tool execution (after API/model basics)
-                       ├─► document extraction ──► retrieval/RAG
-                       └─► logs/evaluations (introduced early in small form,
-                                            expanded with experiments)
-```
-
-Likely prerequisites: basic API calls precede provider comparison; model interaction and schemas precede robust tool loops; document extraction precedes retrieval over documents; tests and evaluation cases should grow alongside features rather than being postponed entirely. These are recommendations and may be adjusted with an explained roadmap detour.
-
 ## Open questions
 
-- Which provider and model should power the first AI experiment, if any?
 - Which frontend build setup should be used as the React experiment grows?
 - What local development environment and container workflow should be adopted?
 - Which evaluation, logging, and privacy controls are appropriate for each experiment?

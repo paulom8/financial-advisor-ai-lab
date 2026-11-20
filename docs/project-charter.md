@@ -35,4 +35,4 @@ The eventual laboratory may explore model interaction, prompts, assistants, tool
 
 **Confirmed:** purpose, educational nature, synthetic-data boundary, incremental learning, coverage of all 15 categories, flexible sequencing with explained detours, and the current `main` plus temporary feature-branch workflow.
 
-**Proposed:** the detailed application structure and implementation sequence in [architecture](architecture.md) and [learning roadmap](learning-roadmap.md).
+[Architecture](architecture.md) records the implemented components and proposals for extending them. The [learning roadmap](learning-roadmap.md) distinguishes reviewed experiments from the suggested sequence for future work.

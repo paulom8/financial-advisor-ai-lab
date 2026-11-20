@@ -1,64 +1,73 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { askQuestion } from './api.js';
 
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
+const MAX_QUESTION_LENGTH = 4_000;
 
 export default function App() {
-  const [records, setRecords] = useState([]);
-  const [status, setStatus] = useState('loading');
+  const [question, setQuestion] = useState('');
+  const [submission, setSubmission] = useState({ status: 'idle' });
+  const trimmedQuestion = question.trim();
+  const isTooLong = Array.from(trimmedQuestion).length > MAX_QUESTION_LENGTH;
+  const isSubmitting = submission.status === 'loading';
+  const canSubmit = Boolean(trimmedQuestion) && !isTooLong && !isSubmitting;
 
-  useEffect(() => {
-    const controller = new AbortController();
-    fetch(`${API_URL}/api/test-records`, { signal: controller.signal })
-      .then((response) => {
-        if (!response.ok) throw new Error(`Request failed (${response.status})`);
-        return response.json();
-      })
-      .then((data) => {
-        setRecords(data);
-        setStatus('ready');
-      })
-      .catch((error) => {
-        if (error.name !== 'AbortError') setStatus('error');
-      });
-    return () => controller.abort();
-  }, []);
+  async function handleSubmit(event) {
+    event.preventDefault();
+    if (!canSubmit) return;
+    setSubmission({ status: 'loading' });
+    try {
+      const answer = await askQuestion(trimmedQuestion);
+      setSubmission({ status: 'answered', question: trimmedQuestion, answer });
+    } catch (error) {
+      setSubmission({ status: 'error', message: error.message });
+    }
+  }
 
   return (
     <main className="page-shell">
       <header className="page-header">
-        <div className="eyebrow"><span className="status-dot" /> LEARNING LAB</div>
-        <h1>Database records</h1>
-        <p className="intro">A small first step: reading saved records through the API.</p>
+        <h1>Ask the model</h1>
+        <p className="intro">Your question will be sent to OpenAI. Use a fictional example.</p>
       </header>
 
-      <section className="panel" aria-labelledby="records-heading">
-        <div className="panel-heading">
-          <div>
-            <p className="eyebrow muted">SAMPLE DATA</p>
-            <h2 id="records-heading">Test table</h2>
-          </div>
-          {status === 'ready' && <span className="record-count">{records.length} {records.length === 1 ? 'record' : 'records'}</span>}
-        </div>
-
-        {status === 'loading' && <p className="message">Loading records…</p>}
-        {status === 'error' && <p className="message error">Could not connect to the API. Start the backend and refresh this page.</p>}
-        {status === 'ready' && records.length === 0 && <p className="message">There are no records yet.</p>}
-        {status === 'ready' && records.length > 0 && (
-          <div className="table-wrap">
-            <table>
-              <thead><tr><th>ID</th><th>Description</th><th>Date inserted</th></tr></thead>
-              <tbody>{records.map((record) => (
-                <tr key={record.id}>
-                  <td className="id-cell">{record.id}</td>
-                  <td>{record.description}</td>
-                  <td className="date-cell">{new Date(record.date_inserted).toLocaleString()}</td>
-                </tr>
-              ))}</tbody>
-            </table>
-          </div>
+      <form className="panel question-form" onSubmit={handleSubmit}>
+        <label htmlFor="question">Your question</label>
+        <textarea
+          id="question"
+          aria-describedby={isTooLong ? 'privacy-note length-error' : 'privacy-note'}
+          aria-invalid={isTooLong}
+          value={question}
+          onChange={(event) => setQuestion(event.target.value)}
+          placeholder="Explain compound interest using a fictional example."
+          rows={5}
+          required
+        />
+        <p className="privacy-note" id="privacy-note">
+          Use synthetic data only. Do not enter real personal or client financial information.
+        </p>
+        {isTooLong && (
+          <p className="error" id="length-error" role="alert">
+            Shorten your question to {MAX_QUESTION_LENGTH.toLocaleString()} characters or fewer.
+          </p>
         )}
-        <div className="panel-footer">Records are sample data for this educational prototype.</div>
-      </section>
+        <button type="submit" disabled={!canSubmit}>
+          {isSubmitting ? 'Waiting for answer…' : 'Submit question'}
+        </button>
+        <span className="visually-hidden" role="status">
+          {isSubmitting && 'Waiting for OpenAI…'}
+          {submission.status === 'answered' && 'Answer received.'}
+        </span>
+        {submission.status === 'error' && <p className="error" role="alert">{submission.message}</p>}
+      </form>
+
+      {submission.status === 'answered' && (
+        <section className="panel" aria-labelledby="answer-heading">
+          <h2 id="answer-heading">Answer</h2>
+          <p className="answer-question">{submission.question}</p>
+          <p className="answer-text">{submission.answer}</p>
+          <p className="panel-footer">AI-generated answer for educational use. Review it before relying on it.</p>
+        </section>
+      )}
     </main>
   );
 }

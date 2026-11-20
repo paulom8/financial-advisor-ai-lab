@@ -21,7 +21,7 @@
 
 **Current branch strategy:** use `main` as the integration branch and create a temporary feature branch for each task. Push the feature branch and review it through a pull request before merging to `main`. A separate `development` branch is not needed for the current learning project; revisit it if a distinct integration or staging workflow becomes useful. Show the exact Git command whenever one is run or suggested, and briefly explain its effect so the user can learn Git through the work.
 
-**Development environment:** local development first; Docker and cloud hosting are intended learning topics for later. Dependency manager, runtime versions, and exact local setup are unresolved until implementation planning.
+Local development uses a Python virtual environment and pip for the backend, npm and Vite for the frontend, and a local PostgreSQL database. The [README](../README.md#run-locally) contains the startup commands. Docker and cloud hosting remain future learning topics.
 
 ## Codex collaboration and documentation
 

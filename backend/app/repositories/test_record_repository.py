@@ -16,10 +16,8 @@ class TestRecordRepository:
         """Return all rows ordered by their generated identifier."""
         return list(self.db.scalars(select(TestRecord).order_by(TestRecord.id)))
 
-    def create(self, description: str) -> TestRecord:
-        """Insert and return a record, using the database timestamp default."""
-        record = TestRecord(description=description)
-        self.db.add(record)
-        self.db.commit()
-        self.db.refresh(record)
-        return record
+    def has_records(self) -> bool:
+        return self.db.scalar(select(TestRecord.id).limit(1)) is not None
+
+    def add(self, description: str) -> None:
+        self.db.add(TestRecord(description=description))
