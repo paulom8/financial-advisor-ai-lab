@@ -2,7 +2,12 @@
 
 from app.db.session import SessionLocal, engine
 from app.repositories.test_record_repository import TestRecordRepository
-from app.services.test_record_service import SYNTHETIC_RECORDS, initialize_test_table
+from app.services.test_record_service import (
+    SYNTHETIC_PREFIX_PATTERN,
+    SYNTHETIC_RECORD_PREFIXES,
+    SYNTHETIC_RECORDS,
+    initialize_test_table,
+)
 
 
 def seed_synthetic_records() -> tuple[int, int]:
@@ -10,8 +15,16 @@ def seed_synthetic_records() -> tuple[int, int]:
     with SessionLocal.begin() as db:
         initialize_test_table(db)
         repository = TestRecordRepository(db)
-        existing = set(repository.list_matching_descriptions(SYNTHETIC_RECORDS))
-        missing = [description for description in SYNTHETIC_RECORDS if description not in existing]
+        existing_prefixes = {
+            match.group()
+            for description in repository.list_descriptions_matching(SYNTHETIC_PREFIX_PATTERN.pattern)
+            if (match := SYNTHETIC_PREFIX_PATTERN.match(description)) is not None
+        }
+        missing = [
+            description
+            for prefix, description in zip(SYNTHETIC_RECORD_PREFIXES, SYNTHETIC_RECORDS)
+            if prefix not in existing_prefixes
+        ]
         for description in missing:
             repository.add(description)
     return len(missing), len(SYNTHETIC_RECORDS)

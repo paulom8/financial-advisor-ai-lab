@@ -24,6 +24,8 @@ The code review restricted the tool to the five approved descriptions, moved the
 
 The user approved integration after the implementation review and walkthrough.
 
+**Edited targets follow-up, 22 November 2026.** The original filter excluded a demo record when its amount changed. The tool now checks the approved client and goal separately from the numeric target. The seed command preserves edited amounts. All 13 backend tests passed, and a live question returned Demo Client B at AUD $85,000 from the edited PostgreSQL record.
+
 ## Still to explore
 
 The roadmap tracks the remaining areas, including AI application architecture and deployment; MCP, connectors, and plugins; model evaluation and observability; security and governance; prompts; workflows; context and retrieval; multimodal inputs and outputs; assistants; reusable AI components; and agents.
