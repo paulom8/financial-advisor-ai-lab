@@ -81,6 +81,16 @@ button:disabled { opacity: .55; cursor: not-allowed; }
 
 .error { color: #923e30; margin: 0; }
 .answer-question { color: #52635a; font-style: italic; }
+.function-status {
+  display: inline-block;
+  margin: 0 0 4px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: .8rem;
+  font-weight: 700;
+}
+.function-status.used { color: #27533d; background: #e6f2e8; }
+.function-status.not-used { color: #52635a; background: #eef1ed; }
 .answer-text { white-space: pre-wrap; line-height: 1.7; }
 .panel-footer { border-top: 1px solid #d9e2d8; padding-top: 14px; }
 

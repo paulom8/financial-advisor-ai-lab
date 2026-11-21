@@ -19,12 +19,16 @@ The React page uses Vite and npm. FastAPI exposes two routes.
 
 | FastAPI route | Request and result | External dependency |
 |---|---|---|
-| `POST /api/ask` | The React form submits `{"question": "..."}`. FastAPI validates it and returns `{"answer": "..."}` to the same page for human review. | The backend calls the OpenAI Responses API using the official Python SDK. |
+| `POST /api/ask` | The React form submits `{"question": "..."}`. FastAPI validates it and returns an answer plus `database_function_used` for human review. | The backend calls the OpenAI Responses API using the official Python SDK and may execute the single allowlisted database function. |
 | `GET /api/test-records` | Returns the sample rows from the introductory database experiment. | SQLAlchemy reads the PostgreSQL `"Test"` table. |
 
-Each submission sends one independent question. FastAPI reuses its OpenAI client across requests and sets `store=False` to disable storage of the response for later retrieval through the Responses API. Questions and answers stay out of PostgreSQL. The backend reads `OPENAI_API_KEY` and the optional `OPENAI_MODEL` at startup. The ignored backend environment file holds local credentials. See the [local setup instructions](../README.md#run-locally).
+Each submission sends one independent question. FastAPI reuses its OpenAI client across requests and sets `store=False` for both Responses API calls. Questions and answers stay out of PostgreSQL. The backend reads `OPENAI_API_KEY` and the optional `OPENAI_MODEL` at startup. The ignored backend environment file holds local credentials. See the [local setup instructions](../README.md#run-locally).
 
-The dedicated `financial_advisor_app` role owns the `financial_advisor_lab` database. The sample table has an incrementing integer `id`, a `description` of up to 255 characters, and a `date_inserted` timestamp. Startup initializes the table and inserts one synthetic record when it is empty.
+The dedicated `financial_advisor_app` role owns the `financial_advisor_lab` database. The `Test` table has an incrementing integer `id`, a `description` of up to 255 characters, and a `date_inserted` timestamp. Startup creates the table if needed, but does not insert rows. The explicit `python -m app.seed_test_records` command adds five clearly labelled fictional savings examples, skips matching descriptions on repeat runs, and preserves other rows.
+
+The question route exposes one strict `list_test_records` function with no arguments. FastAPI accepts a single completed call with the expected name, a call ID, and an empty JSON object. It runs the synchronous SQLAlchemy query in a worker thread. The query selects descriptions that match the five approved fictional savings examples, in ascending ID order. It fetches up to 51 matching rows and sends the first 50 descriptions. FastAPI adds a notice to the answer if more rows matched.
+
+The follow-up request sends the original question, the first response’s output items (including encrypted reasoning when available), and the function result paired with its call ID. Response storage stays disabled on both requests, and the follow-up disables further calls. The model is instructed to ground record claims in the returned descriptions. React uses `database_function_used` to show whether the query ran. The direct question flow and the separate records endpoint remain available.
 
 ## Proposed architecture
 

@@ -4,6 +4,7 @@
 
 - Work incrementally: propose or implement one small AI concept or feature at a time. Explain its purpose, what the learner should notice, and which capability or industry pattern it teaches.
 - Give the user room to inspect and learn before moving on to another concept.
+- Keep every existing feature and learning page available when adding an experiment. Experiments can share a page when each remains easy to try. Maintain the [learning pages index](../README.md#learning-pages) with the location and learning purpose of each page. Ask the user before replacing or removing an existing feature or page.
 - Distinguish the AI/provider capability from the application code or development tool used to expose it.
 - Use the industry-prioritized roadmap as the baseline. The baseline reflects real-world relevance, industry adoption, practical usefulness, and career value—not ease or implementation effort.
 - Before a detour, explain how it supports a dependency, avoids rework, or improves the application's learning flow; describe the expected learning outcome and affected roadmap items. Return to the baseline after a temporary detour unless the user approves a change.

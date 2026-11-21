@@ -9,10 +9,17 @@ from unittest.mock import Mock, patch
 import httpx
 from fastapi.testclient import TestClient
 from openai import AsyncOpenAI
+from sqlalchemy import create_engine
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 
 # Configuration loads at import time. Give the app only synthetic test settings.
 with patch("dotenv.load_dotenv"), patch.dict(os.environ, {}, clear=True):
     from app import main
+    from app.models import TestRecord
+    from app.services.test_record_service import SYNTHETIC_RECORDS
+    from app.services.test_record_tool import MAX_TOOL_RECORDS
 
 
 def model_response(*content, status="completed", incomplete_details=None):
@@ -25,6 +32,27 @@ def model_response(*content, status="completed", incomplete_details=None):
     })
 
 
+def function_call(**overrides):
+    return {
+        "type": "function_call",
+        "id": "fc_synthetic",
+        "call_id": "call_synthetic",
+        "name": "list_test_records",
+        "arguments": "{}",
+        "status": "completed",
+        **overrides,
+    }
+
+
+def tool_response(*items, status="completed"):
+    return httpx.Response(200, json={
+        "id": "resp_function_call",
+        "object": "response",
+        "status": status,
+        "output": list(items),
+    })
+
+
 @contextmanager
 def local_api(handler, *, api_key="test-key"):
     def create_sdk_client(**kwargs):
@@ -34,7 +62,7 @@ def local_api(handler, *, api_key="test-key"):
     with (
         patch.object(main, "OPENAI_API_KEY", api_key),
         patch.object(main, "AsyncOpenAI", side_effect=create_sdk_client),
-        patch.object(main, "initialize_sample_table"),
+        patch.object(main, "initialize_test_table"),
         patch.object(main.engine, "connect", side_effect=AssertionError("Unexpected database access")),
         TestClient(main.app) as api,
     ):
@@ -48,7 +76,7 @@ class QuestionEndpointTests(TestCase):
             response = api.post("/api/ask", json={"question": "  What is two plus two? "})
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json(), {"answer": "Four."})
+        self.assertEqual(response.json(), {"answer": "Four.", "database_function_used": False})
         provider.assert_called_once()
         request = provider.call_args.args[0]
         self.assertEqual(request.method, "POST")
@@ -56,7 +84,138 @@ class QuestionEndpointTests(TestCase):
         body = json.loads(request.content)
         self.assertEqual(body["input"], "What is two plus two?")
         self.assertIs(body["store"], False)
+        self.assertEqual(body["tools"][0]["name"], "list_test_records")
+        self.assertEqual(body["tool_choice"], "auto")
+        self.assertIs(body["parallel_tool_calls"], False)
         self.assertNotIn("previous_response_id", body)
+
+    def test_function_call_round_trip_returns_result_and_preserves_response_items(self):
+        records = {
+            "limit": 50,
+            "truncated": False,
+            "records": [SYNTHETIC_RECORDS[2]],
+        }
+        reasoning = {
+            "type": "reasoning",
+            "id": "rs_synthetic",
+            "summary": [],
+            "encrypted_content": "synthetic-encrypted-content",
+        }
+        call = function_call()
+        provider = Mock(side_effect=[
+            tool_response(reasoning, call),
+            model_response({"type": "output_text", "text": "Demo Client C has the largest target at AUD $42,000."}),
+        ])
+        with local_api(provider) as api, patch(
+            "app.api.routes.questions.list_test_records_for_tool", return_value=records
+        ) as read_records:
+            response = api.post("/api/ask", json={"question": "Which client has the largest target?"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {
+            "answer": "Demo Client C has the largest target at AUD $42,000.",
+            "database_function_used": True,
+        })
+        read_records.assert_called_once_with()
+        self.assertEqual(provider.call_count, 2)
+        first_body = json.loads(provider.call_args_list[0].args[0].content)
+        self.assertIs(first_body["store"], False)
+        self.assertEqual(first_body["include"], ["reasoning.encrypted_content"])
+        second_body = json.loads(provider.call_args_list[1].args[0].content)
+        self.assertIs(second_body["store"], False)
+        self.assertNotIn("previous_response_id", second_body)
+        self.assertEqual(second_body["tool_choice"], "none")
+        self.assertEqual(second_body["input"][0]["content"], "Which client has the largest target?")
+        self.assertEqual(second_body["input"][1:3], [reasoning, call])
+        result = second_body["input"][3]
+        self.assertEqual(result["type"], "function_call_output")
+        self.assertEqual(result["call_id"], call["call_id"])
+        self.assertEqual(json.loads(result["output"]), records)
+
+    def test_invalid_or_incomplete_function_calls_never_read_database(self):
+        for response_from_provider in (
+            tool_response(function_call(name="write_records")),
+            tool_response(function_call(namespace="another_tool")),
+            tool_response(function_call(arguments='{"limit": 500}')),
+            tool_response(function_call(arguments="[]")),
+            tool_response(function_call(arguments="{")),
+            tool_response(function_call(call_id="")),
+            tool_response({key: value for key, value in function_call().items() if key != "call_id"}),
+            tool_response(function_call(status="incomplete")),
+            tool_response(function_call(), status="incomplete"),
+            tool_response(function_call(), function_call(call_id="call_second")),
+        ):
+            with self.subTest(response=response_from_provider.json()):
+                provider = Mock(return_value=response_from_provider)
+                with local_api(provider) as api, patch(
+                    "app.api.routes.questions.list_test_records_for_tool"
+                ) as read_records:
+                    response = api.post("/api/ask", json={"question": "Read the saved records."})
+                self.assertEqual(response.status_code, 502)
+                read_records.assert_not_called()
+                provider.assert_called_once()
+
+    def test_database_function_failure_returns_clear_error(self):
+        provider = Mock(return_value=tool_response(function_call()))
+        with local_api(provider) as api, patch(
+            "app.api.routes.questions.list_test_records_for_tool",
+            side_effect=SQLAlchemyError("private database details"),
+        ):
+            response = api.post("/api/ask", json={"question": "List the saved records."})
+        self.assertEqual(response.status_code, 503)
+        self.assertIn("database function could not read", response.json()["detail"])
+        self.assertNotIn("private database details", response.text)
+        provider.assert_called_once()
+
+    def test_follow_up_cannot_run_the_tool_again(self):
+        provider = Mock(side_effect=[
+            tool_response(function_call()),
+            tool_response(function_call(call_id="call_second")),
+        ])
+        with local_api(provider) as api, patch(
+            "app.api.routes.questions.list_test_records_for_tool",
+            return_value={"limit": 50, "truncated": False, "records": []},
+        ) as read_records:
+            response = api.post("/api/ask", json={"question": "List the saved records."})
+
+        self.assertEqual(response.status_code, 502)
+        read_records.assert_called_once_with()
+        self.assertEqual(provider.call_count, 2)
+
+    def test_provider_only_receives_approved_descriptions_and_page_gets_limit_notice(self):
+        engine = create_engine(
+            "sqlite://", poolclass=StaticPool, connect_args={"check_same_thread": False}
+        )
+        self.addCleanup(engine.dispose)
+        TestRecord.__table__.create(engine)
+        sessions = sessionmaker(bind=engine)
+        unapproved = "FICTIONAL DEMO — An unapproved test description"
+        with sessions.begin() as db:
+            db.add(TestRecord(description=unapproved))
+            db.add_all(
+                TestRecord(description=SYNTHETIC_RECORDS[i % len(SYNTHETIC_RECORDS)])
+                for i in range(MAX_TOOL_RECORDS + 1)
+            )
+
+        provider = Mock(side_effect=[
+            tool_response(function_call()),
+            model_response({"type": "output_text", "text": "Here are the matching goals."}),
+        ])
+        with local_api(provider) as api, patch(
+            "app.services.test_record_tool.SessionLocal", sessions
+        ):
+            response = api.post("/api/ask", json={"question": "List the saved records."})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()["database_function_used"])
+        self.assertIn(
+            f"only the first {MAX_TOOL_RECORDS} matching fictional rows", response.json()["answer"]
+        )
+        sent = json.loads(provider.call_args_list[1].args[0].content)
+        result = json.loads(sent["input"][-1]["output"])
+        self.assertTrue(result["truncated"])
+        self.assertEqual(len(result["records"]), MAX_TOOL_RECORDS)
+        self.assertEqual(set(result["records"]), set(SYNTHETIC_RECORDS))
 
     def test_invalid_questions_do_not_reach_provider(self):
         provider = Mock()
@@ -112,7 +271,10 @@ class QuestionEndpointTests(TestCase):
             refusal = api.post("/api/ask", json=question)
             incomplete = api.post("/api/ask", json=question)
         self.assertEqual(refusal.status_code, 200)
-        self.assertEqual(refusal.json(), {"answer": "I can only provide general information."})
+        self.assertEqual(refusal.json(), {
+            "answer": "I can only provide general information.",
+            "database_function_used": False,
+        })
         self.assertEqual(incomplete.status_code, 502)
         self.assertIn("output limit", incomplete.json()["detail"])
         self.assertNotIn("A partial sentence", incomplete.text)

@@ -11,3 +11,4 @@ class QuestionRequest(BaseModel):
 
 class QuestionResponse(BaseModel):
     answer: str
+    database_function_used: bool

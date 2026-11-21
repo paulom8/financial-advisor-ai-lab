@@ -29,5 +29,8 @@ export async function askQuestion(question) {
   if (typeof data?.answer !== 'string' || !data.answer.trim()) {
     throw new Error('The API returned a response without a text answer.');
   }
-  return data.answer;
+  if (typeof data?.database_function_used !== 'boolean') {
+    throw new Error('The API response is missing database function status.');
+  }
+  return { answer: data.answer, databaseFunctionUsed: data.database_function_used };
 }

@@ -14,7 +14,15 @@ An educational prototype for learning AI capabilities and how they are used in r
 
 ## Current status
 
-The React page sends one synthetic question to `POST /api/ask`. FastAPI calls the OpenAI Responses API, and React displays the answer for human review. Each question starts a fresh request. A separate `GET /api/test-records` endpoint reads the PostgreSQL sample table. See the [architecture](docs/architecture.md) and [learning roadmap](docs/learning-roadmap.md).
+The React page sends one synthetic question to `POST /api/ask`. FastAPI calls the OpenAI Responses API and may execute one validated, read-only function to retrieve PostgreSQL `Test` records; React displays the answer and whether the function was used. Each question starts a fresh request. A separate `GET /api/test-records` endpoint reads the same table. See the [architecture](docs/architecture.md) and [learning roadmap](docs/learning-roadmap.md).
+
+## Learning pages
+
+| Page | Experiment | What to try |
+|---|---|---|
+| [Ask the model](http://localhost:5173/) | Single question and answer | Ask “Explain compound interest.” Look for **Database function not used**. |
+| [Ask the model](http://localhost:5173/) | Function calling with PostgreSQL | Ask “Which demo client has the largest savings target?” Look for **Database function used**. |
+| [FastAPI interactive docs](http://localhost:8000/docs) | PostgreSQL read through FastAPI | Run `GET /api/test-records` to see the saved fictional records directly. |
 
 ## Run locally
 
@@ -26,6 +34,14 @@ Use Python 3.11 or newer for the current FastAPI release, Node.js with npm (Vite
 python -m venv backend/.venv
 .\backend\.venv\Scripts\python.exe -m pip install -r backend/requirements.txt
 npm.cmd --prefix frontend ci
+```
+
+**Insert the fictional function-calling examples.** This explicit, repeatable command adds five labelled synthetic records and skips any that are already present. It preserves other rows and is not run on application startup. Run it once from the project root after configuring `backend/.env`:
+
+```powershell
+Push-Location backend
+.\.venv\Scripts\python.exe -m app.seed_test_records
+Pop-Location
 ```
 
 **Daily startup on Windows.** Open two terminals in the project root and keep both running. In the first terminal, start FastAPI and wait for `Application startup complete`.
