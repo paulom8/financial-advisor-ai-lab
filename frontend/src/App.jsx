@@ -16,8 +16,8 @@ export default function App() {
     if (!canSubmit) return;
     setSubmission({ status: 'loading' });
     try {
-      const answer = await askQuestion(trimmedQuestion);
-      setSubmission({ status: 'answered', question: trimmedQuestion, answer });
+      const result = await askQuestion(trimmedQuestion);
+      setSubmission({ status: 'answered', question: trimmedQuestion, ...result });
     } catch (error) {
       setSubmission({ status: 'error', message: error.message });
     }
@@ -64,6 +64,9 @@ export default function App() {
         <section className="panel" aria-labelledby="answer-heading">
           <h2 id="answer-heading">Answer</h2>
           <p className="answer-question">{submission.question}</p>
+          <p className={`function-status ${submission.databaseFunctionUsed ? 'used' : 'not-used'}`}>
+            Database function {submission.databaseFunctionUsed ? 'used' : 'not used'}
+          </p>
           <p className="answer-text">{submission.answer}</p>
           <p className="panel-footer">AI-generated answer for educational use. Review it before relying on it.</p>
         </section>

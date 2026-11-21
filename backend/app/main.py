@@ -10,7 +10,7 @@ from app.api.routes.questions import router as questions_router
 from app.api.routes.test_records import router as test_records_router
 from app.core.config import OPENAI_API_KEY
 from app.db.session import SessionLocal, engine
-from app.services.test_record_service import initialize_sample_table
+from app.services.test_record_service import initialize_test_table
 
 
 @asynccontextmanager
@@ -19,7 +19,7 @@ async def lifespan(_: FastAPI):
     client = None
     try:
         with SessionLocal.begin() as db:
-            initialize_sample_table(db)
+            initialize_test_table(db)
         if OPENAI_API_KEY:
             client = AsyncOpenAI(api_key=OPENAI_API_KEY, timeout=30.0, max_retries=0)
         yield {"openai_client": client}

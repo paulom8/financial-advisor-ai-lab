@@ -6,9 +6,12 @@ const question = 'Explain simple interest using a fictional example.';
 
 test('submits one question to the API and returns its answer', async (t) => {
   const answer = 'A fictional $100 deposit at 2% simple interest earns $2 in one year.';
-  const fetch = t.mock.method(globalThis, 'fetch', async () => Response.json({ answer }));
+  const fetch = t.mock.method(globalThis, 'fetch', async () => Response.json({
+    answer,
+    database_function_used: false,
+  }));
 
-  assert.equal(await askQuestion(question), answer);
+  assert.deepEqual(await askQuestion(question), { answer, databaseFunctionUsed: false });
   assert.equal(fetch.mock.callCount(), 1);
   const [url, options] = fetch.mock.calls[0].arguments;
   assert.equal(url.href, 'http://localhost:8000/api/ask');
