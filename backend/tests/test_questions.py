@@ -70,6 +70,124 @@ def local_api(handler, *, api_key="test-key"):
         yield api
 
 
+def snapshot_with(*descriptions):
+    return {"limit": MAX_TOOL_RECORDS, "truncated": False, "records": list(descriptions)}
+
+
+class EvaluationEndpointTests(TestCase):
+    def test_scores_answer_and_tool_use_independently(self):
+        records = list(SYNTHETIC_RECORDS)
+        records[1] = records[1].replace("$8,500", "$85,000")
+        snapshot = snapshot_with(*records)
+        provider = Mock(side_effect=[
+            tool_response(function_call()),
+            model_response({"type": "output_text", "text": "Demo Client C: AUD $42,000"}),
+            model_response({"type": "output_text", "text": "Not found"}),
+            model_response({"type": "output_text", "text": "**AUD $121.00**"}),
+        ])
+        with local_api(provider) as api, patch(
+            "app.api.routes.evaluation.list_test_records_for_tool", return_value=snapshot
+        ) as fetch_records:
+            response = api.post("/api/evaluation", json={"run": True})
+
+        self.assertEqual(response.status_code, 200)
+        largest, absent, general = response.json()["cases"]
+        self.assertEqual(largest["expected_answer"], "Demo Client B · AUD $85,000")
+        self.assertEqual(largest["status"], "failed")
+        self.assertTrue(largest["database_function_used"])
+        self.assertFalse(largest["answer_matched"])
+        self.assertEqual(absent["status"], "failed")
+        self.assertFalse(absent["database_function_used"])
+        self.assertTrue(absent["answer_matched"])
+        self.assertEqual(general["status"], "passed")
+        self.assertFalse(general["database_function_used"])
+        fetch_records.assert_called_once_with()
+        self.assertEqual(provider.call_count, 4)
+        follow_up = json.loads(provider.call_args_list[1].args[0].content)
+        self.assertEqual(json.loads(follow_up["input"][-1]["output"]), snapshot)
+        self.assertTrue(all(
+            json.loads(call.args[0].content)["store"] is False for call in provider.call_args_list
+        ))
+
+    def test_a_new_run_recalculates_the_expected_winner_after_an_edit(self):
+        original = snapshot_with(*SYNTHETIC_RECORDS)
+        edited = snapshot_with(*SYNTHETIC_RECORDS)
+        edited["records"][1] = edited["records"][1].replace("$8,500", "$85,000")
+
+        def conversation(winner):
+            return [
+                tool_response(function_call()),
+                model_response({"type": "output_text", "text": winner}),
+                tool_response(function_call()),
+                model_response({"type": "output_text", "text": "Not found."}),
+                model_response({"type": "output_text", "text": "$121"}),
+            ]
+
+        provider = Mock(side_effect=(
+            conversation("Demo Client C: AUD $42,000")
+            + conversation("Demo Client B: AUD $85,000")
+        ))
+        with local_api(provider) as api, patch(
+            "app.api.routes.evaluation.list_test_records_for_tool", side_effect=[original, edited]
+        ) as fetch_records:
+            for snapshot, expected in ((original, "Demo Client C"), (edited, "Demo Client B")):
+                response = api.post("/api/evaluation", json={"run": True})
+                self.assertEqual(response.status_code, 200)
+                results = response.json()["cases"]
+                self.assertTrue(results[0]["expected_answer"].startswith(expected))
+                self.assertEqual([result["status"] for result in results], ["passed"] * 3)
+
+        self.assertEqual(fetch_records.call_count, 2)
+        for index, snapshot in ((1, original), (6, edited)):
+            follow_up = json.loads(provider.call_args_list[index].args[0].content)
+            self.assertEqual(json.loads(follow_up["input"][-1]["output"]), snapshot)
+
+    def test_ambiguous_database_snapshot_blocks_run_before_provider_calls(self):
+        provider = Mock()
+        snapshot = snapshot_with(*SYNTHETIC_RECORDS, SYNTHETIC_RECORDS[0])
+        with local_api(provider) as api, patch(
+            "app.api.routes.evaluation.list_test_records_for_tool", return_value=snapshot
+        ):
+            response = api.post("/api/evaluation", json={"run": True})
+
+        self.assertEqual(response.status_code, 409)
+        self.assertIn("missing or duplicate", response.json()["detail"])
+        provider.assert_not_called()
+
+    def test_provider_error_has_no_answer_score(self):
+        provider = Mock(side_effect=[
+            httpx.ReadTimeout("simulated timeout"),
+            tool_response(function_call()),
+            model_response({"type": "output_text", "text": "Not found"}),
+            model_response({"type": "output_text", "text": "AUD $121"}),
+        ])
+        with local_api(provider) as api, patch(
+            "app.api.routes.evaluation.list_test_records_for_tool",
+            return_value=snapshot_with(*SYNTHETIC_RECORDS),
+        ):
+            response = api.post("/api/evaluation", json={"run": True})
+
+        self.assertEqual(response.status_code, 200)
+        largest, absent, general = response.json()["cases"]
+        self.assertEqual(largest["status"], "error")
+        self.assertIsNone(largest["answer_matched"])
+        self.assertIn("timed out", largest["error"])
+        self.assertEqual(absent["status"], "passed")
+        self.assertEqual(general["status"], "passed")
+
+    def test_loading_or_posting_without_confirmation_never_starts_evaluation(self):
+        provider = Mock()
+        with local_api(provider) as api, patch(
+            "app.api.routes.evaluation.list_test_records_for_tool"
+        ) as fetch_records:
+            self.assertEqual(api.get("/api/evaluation").status_code, 405)
+            self.assertEqual(api.post("/api/evaluation", json={"run": False}).status_code, 422)
+            plain_post = api.post("/api/evaluation", content='{"run":true}')
+            self.assertIn(plain_post.status_code, (415, 422))
+        fetch_records.assert_not_called()
+        provider.assert_not_called()
+
+
 class QuestionEndpointTests(TestCase):
     def demo_database(self):
         engine = create_engine(

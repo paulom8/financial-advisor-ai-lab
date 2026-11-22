@@ -26,6 +26,12 @@ The user approved integration after the implementation review and walkthrough.
 
 **Edited targets follow-up, 22 November 2026.** The original filter excluded a demo record when its amount changed. The tool now checks the approved client and goal separately from the numeric target. The seed command preserves edited amounts. All 13 backend tests passed, and a live question returned Demo Client B at AUD $85,000 from the edited PostgreSQL record.
 
+## Current focus
+
+**Model evaluation — In progress, 22 November 2026.** The separate **Evaluate the model** page scores the largest savings target, an absent client, and a general compound interest question. It checks tool use and the answer independently. The user can edit a fictional target and rerun the evaluation against the current records.
+
+Verification passed with 18 backend tests, nine frontend tests, and a frontend production build. A browser run used local PostgreSQL and simulated provider replies to show separate failures for a wrong amount and a missing lookup, and a pass for the general question. The first live evaluation is pending user review.
+
 ## Still to explore
 
 The roadmap tracks the remaining areas, including AI application architecture and deployment; MCP, connectors, and plugins; model evaluation and observability; security and governance; prompts; workflows; context and retrieval; multimodal inputs and outputs; assistants; reusable AI components; and agents.

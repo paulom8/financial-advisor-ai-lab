@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { askQuestion } from '../src/api.js';
+import { askQuestion, runEvaluation } from '../src/api.js';
 
 const question = 'Explain simple interest using a fictional example.';
 
@@ -29,6 +29,32 @@ test('passes a backend error detail to the form', async (t) => {
 test('identifies the attempted API address when a connection fails', async (t) => {
   t.mock.method(globalThis, 'fetch', async () => { throw new TypeError('Failed to fetch'); });
   await assert.rejects(askQuestion(question), /Could not reach http:\/\/localhost:8000/);
+});
+
+test('starts the preset evaluation with one explicit request', async (t) => {
+  const report = { model: 'demo-model', cases: [
+    { id: 'largest-target', status: 'passed' },
+    { id: 'absent-client', status: 'failed' },
+    { id: 'general-question', status: 'error' },
+  ] };
+  const fetch = t.mock.method(globalThis, 'fetch', async () => Response.json(report));
+
+  assert.deepEqual(await runEvaluation(), report);
+  assert.equal(fetch.mock.callCount(), 1);
+  const [url, options] = fetch.mock.calls[0].arguments;
+  assert.equal(url.href, 'http://localhost:8000/api/evaluation');
+  assert.equal(options.method, 'POST');
+  assert.equal(options.headers['Content-Type'], 'application/json');
+  assert.deepEqual(JSON.parse(options.body), { run: true });
+});
+
+test('rejects an incomplete report and surfaces backend evaluation errors', async (t) => {
+  const fetch = t.mock.method(globalThis, 'fetch', async () => Response.json({ model: 'demo-model', cases: [] }));
+  await assert.rejects(runEvaluation(), /incomplete evaluation report/);
+
+  const detail = 'Evaluation needs one valid row for each of the five fictional demo clients.';
+  fetch.mock.mockImplementation(async () => Response.json({ detail }, { status: 409 }));
+  await assert.rejects(runEvaluation(), { message: detail });
 });
 
 for (const [name, payload] of [

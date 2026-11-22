@@ -20,6 +20,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from starlette.concurrency import run_in_threadpool
 
 from app.core.config import OPENAI_MODEL
+from app.services.test_record_tool import TestRecordToolResult
 
 
 TOOL_NAME = "list_test_records"
@@ -59,7 +60,7 @@ class OpenAIServiceError(Exception):
 async def answer_question(
     question: str,
     client: AsyncOpenAI | None,
-    list_records: Callable[[], dict[str, object]],
+    list_records: Callable[[], TestRecordToolResult],
 ) -> tuple[str, bool]:
     """Answer one question, optionally completing one validated read-only call."""
     if client is None:

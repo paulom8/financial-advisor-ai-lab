@@ -1,5 +1,7 @@
 """Read-only, bounded database access for the model's function call."""
 
+from typing import TypedDict
+
 from app.db.session import SessionLocal
 from app.repositories.test_record_repository import TestRecordRepository
 from app.services.test_record_service import SYNTHETIC_SAVINGS_PATTERN
@@ -8,7 +10,13 @@ from app.services.test_record_service import SYNTHETIC_SAVINGS_PATTERN
 MAX_TOOL_RECORDS = 50
 
 
-def list_test_records_for_tool() -> dict[str, object]:
+class TestRecordToolResult(TypedDict):
+    limit: int
+    truncated: bool
+    records: list[str]
+
+
+def list_test_records_for_tool() -> TestRecordToolResult:
     """Return approved demo clients and goals with their saved numeric targets."""
     with SessionLocal() as db:
         candidates = TestRecordRepository(db).list_descriptions_matching(
