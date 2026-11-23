@@ -21,6 +21,16 @@ body {
 
 .page-header { margin-bottom: 32px; }
 
+.lab-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin-bottom: 24px;
+}
+
+.lab-nav a { color: #456f58; text-underline-offset: 4px; }
+.lab-nav a[aria-current='page'] { color: #20332e; font-weight: 700; }
+
 h1, h2, .question-form label {
   margin: 0;
   font-family: Manrope, system-ui, sans-serif;
@@ -93,6 +103,18 @@ button:disabled { opacity: .55; cursor: not-allowed; }
 .function-status.not-used { color: #52635a; background: #eef1ed; }
 .answer-text { white-space: pre-wrap; line-height: 1.7; }
 .panel-footer { border-top: 1px solid #d9e2d8; padding-top: 14px; }
+
+.evaluation-controls { display: grid; gap: 12px; }
+.evaluation-controls p { margin: 0; }
+.evaluation-controls [role='status']:empty { display: none; }
+.case-heading { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 14px; }
+.case-status { padding: 4px 9px; border-radius: 999px; font-size: .8rem; font-weight: 700; }
+.case-status.passed { color: #27533d; background: #e6f2e8; }
+.case-status.failed, .case-status.error { color: #923e30; background: #f9ebe7; }
+.case-answers { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr)); gap: 16px; }
+.case-answers dt { color: #52635a; font-weight: 700; }
+.case-answers dd { margin: 4px 0 0; }
+.case-checks { margin-bottom: 0; padding-left: 20px; }
 
 .visually-hidden {
   position: absolute;

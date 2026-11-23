@@ -22,6 +22,7 @@ The React page sends one synthetic question to `POST /api/ask`. FastAPI calls th
 |---|---|---|
 | [Ask the model](http://localhost:5173/) | Single question and answer | Ask “Explain compound interest.” Look for **Database function not used**. |
 | [Ask the model](http://localhost:5173/) | Function calling with PostgreSQL | Ask “Which demo client has the largest savings target?” Look for **Database function used**. |
+| [Evaluate the model](http://localhost:5173/evaluation) | Repeatable model evaluation | Run three preset questions. Compare expected and actual answers and see which questions used the database. Edit a fictional target to try a different expected winner. |
 | [FastAPI interactive docs](http://localhost:8000/docs) | PostgreSQL read through FastAPI | Run `GET /api/test-records` to see the saved fictional records directly. |
 
 ## Run locally
@@ -36,13 +37,15 @@ python -m venv backend/.venv
 npm.cmd --prefix frontend ci
 ```
 
-**Insert the fictional function-calling examples.** This explicit, repeatable command adds five labelled synthetic records and skips any that are already present. It preserves other rows and is not run on application startup. Run it once from the project root after configuring `backend/.env`:
+**Insert the fictional function-calling examples.** This explicit, repeatable command adds missing fictional clients and goals and preserves any amounts you edited. It runs separately from application startup. From the project root after configuring `backend/.env`:
 
 ```powershell
 Push-Location backend
 .\.venv\Scripts\python.exe -m app.seed_test_records
 Pop-Location
 ```
+
+To try a change in PostgreSQL, edit only the amount after `AUD $` on one of the five demo descriptions, using a value such as `85,000` or `85000`. The next database lookup reads the new value.
 
 **Daily startup on Windows.** Open two terminals in the project root and keep both running. In the first terminal, start FastAPI and wait for `Application startup complete`.
 

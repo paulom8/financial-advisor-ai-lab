@@ -15,20 +15,23 @@ This document distinguishes confirmed direction, current implementation, and pro
 
 ## Current implementation
 
-The React page uses Vite and npm. FastAPI exposes two routes.
+The React pages use Vite and npm. FastAPI exposes three routes.
 
 | FastAPI route | Request and result | External dependency |
 |---|---|---|
 | `POST /api/ask` | The React form submits `{"question": "..."}`. FastAPI validates it and returns an answer plus `database_function_used` for human review. | The backend calls the OpenAI Responses API using the official Python SDK and may execute the single allowlisted database function. |
 | `GET /api/test-records` | Returns the sample rows from the introductory database experiment. | SQLAlchemy reads the PostgreSQL `"Test"` table. |
+| `POST /api/evaluation` | The evaluation page sends `{"run": true}` and displays the expected answer, actual answer, tool use, and verdict for each of three preset questions. | FastAPI reads the approved PostgreSQL records once and uses the existing OpenAI question flow. |
 
 Each submission sends one independent question. FastAPI reuses its OpenAI client across requests and sets `store=False` for both Responses API calls. Questions and answers stay out of PostgreSQL. The backend reads `OPENAI_API_KEY` and the optional `OPENAI_MODEL` at startup. The ignored backend environment file holds local credentials. See the [local setup instructions](../README.md#run-locally).
 
-The dedicated `financial_advisor_app` role owns the `financial_advisor_lab` database. The `Test` table has an incrementing integer `id`, a `description` of up to 255 characters, and a `date_inserted` timestamp. Startup creates the table if needed, but does not insert rows. The explicit `python -m app.seed_test_records` command adds five clearly labelled fictional savings examples, skips matching descriptions on repeat runs, and preserves other rows.
+The dedicated `financial_advisor_app` role owns the `financial_advisor_lab` database. The `Test` table has an incrementing integer `id`, a `description` of up to 255 characters, and a `date_inserted` timestamp. Startup creates the table if needed, but does not insert rows. The explicit `python -m app.seed_test_records` command adds the missing examples from the five labelled fictional client and goal pairs. It preserves edited amounts and other rows.
 
-The question route exposes one strict `list_test_records` function with no arguments. FastAPI accepts a single completed call with the expected name, a call ID, and an empty JSON object. It runs the synchronous SQLAlchemy query in a worker thread. The query selects descriptions that match the five approved fictional savings examples, in ascending ID order. It fetches up to 51 matching rows and sends the first 50 descriptions. FastAPI adds a notice to the answer if more rows matched.
+The question route exposes one strict `list_test_records` function with no arguments. FastAPI accepts a single completed call with the expected name, a call ID, and an empty JSON object. It runs the synchronous SQLAlchemy query in a worker thread. The query selects descriptions containing an approved fictional client and goal followed by a valid numeric AUD amount. The amount comes from PostgreSQL on each lookup. FastAPI checks the full description again before sending it to OpenAI. It reads up to 51 matching rows in ascending ID order, sends the first 50, and adds a notice to the answer if more rows matched.
 
 The follow-up request sends the original question, the first response’s output items (including encrypted reasoning when available), and the function result paired with its call ID. Response storage stays disabled on both requests, and the follow-up disables further calls. The model is instructed to ground record claims in the returned descriptions. React uses `database_function_used` to show whether the query ran. The direct question flow and the separate records endpoint remain available.
+
+An evaluation run validates that its snapshot contains one record for each approved demo client and computes the expected largest target from the saved amounts. The model sees that same snapshot when it requests the function. Each of the three questions starts independently. Application rules check whether the model chose the expected tool and answered in the requested format. A provider error appears separately from an incorrect answer. The run starts only on request, uses at most six OpenAI calls, and keeps its report in the current page.
 
 ## Proposed architecture
 

@@ -9,7 +9,7 @@ from unittest.mock import Mock, patch
 import httpx
 from fastapi.testclient import TestClient
 from openai import AsyncOpenAI
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, select, update
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
@@ -18,6 +18,7 @@ from sqlalchemy.pool import StaticPool
 with patch("dotenv.load_dotenv"), patch.dict(os.environ, {}, clear=True):
     from app import main
     from app.models import TestRecord
+    from app.seed_test_records import seed_synthetic_records
     from app.services.test_record_service import SYNTHETIC_RECORDS
     from app.services.test_record_tool import MAX_TOOL_RECORDS
 
@@ -69,7 +70,133 @@ def local_api(handler, *, api_key="test-key"):
         yield api
 
 
+def snapshot_with(*descriptions):
+    return {"limit": MAX_TOOL_RECORDS, "truncated": False, "records": list(descriptions)}
+
+
+class EvaluationEndpointTests(TestCase):
+    def test_scores_answer_and_tool_use_independently(self):
+        records = list(SYNTHETIC_RECORDS)
+        records[1] = records[1].replace("$8,500", "$85,000")
+        snapshot = snapshot_with(*records)
+        provider = Mock(side_effect=[
+            tool_response(function_call()),
+            model_response({"type": "output_text", "text": "Demo Client C: AUD $42,000"}),
+            model_response({"type": "output_text", "text": "Not found"}),
+            model_response({"type": "output_text", "text": "**AUD $121.00**"}),
+        ])
+        with local_api(provider) as api, patch(
+            "app.api.routes.evaluation.list_test_records_for_tool", return_value=snapshot
+        ) as fetch_records:
+            response = api.post("/api/evaluation", json={"run": True})
+
+        self.assertEqual(response.status_code, 200)
+        largest, absent, general = response.json()["cases"]
+        self.assertEqual(largest["expected_answer"], "Demo Client B · AUD $85,000")
+        self.assertEqual(largest["status"], "failed")
+        self.assertTrue(largest["database_function_used"])
+        self.assertFalse(largest["answer_matched"])
+        self.assertEqual(absent["status"], "failed")
+        self.assertFalse(absent["database_function_used"])
+        self.assertTrue(absent["answer_matched"])
+        self.assertEqual(general["status"], "passed")
+        self.assertFalse(general["database_function_used"])
+        fetch_records.assert_called_once_with()
+        self.assertEqual(provider.call_count, 4)
+        follow_up = json.loads(provider.call_args_list[1].args[0].content)
+        self.assertEqual(json.loads(follow_up["input"][-1]["output"]), snapshot)
+        self.assertTrue(all(
+            json.loads(call.args[0].content)["store"] is False for call in provider.call_args_list
+        ))
+
+    def test_a_new_run_recalculates_the_expected_winner_after_an_edit(self):
+        original = snapshot_with(*SYNTHETIC_RECORDS)
+        edited = snapshot_with(*SYNTHETIC_RECORDS)
+        edited["records"][1] = edited["records"][1].replace("$8,500", "$85,000")
+
+        def conversation(winner):
+            return [
+                tool_response(function_call()),
+                model_response({"type": "output_text", "text": winner}),
+                tool_response(function_call()),
+                model_response({"type": "output_text", "text": "Not found."}),
+                model_response({"type": "output_text", "text": "$121"}),
+            ]
+
+        provider = Mock(side_effect=(
+            conversation("Demo Client C: AUD $42,000")
+            + conversation("Demo Client B: AUD $85,000")
+        ))
+        with local_api(provider) as api, patch(
+            "app.api.routes.evaluation.list_test_records_for_tool", side_effect=[original, edited]
+        ) as fetch_records:
+            for snapshot, expected in ((original, "Demo Client C"), (edited, "Demo Client B")):
+                response = api.post("/api/evaluation", json={"run": True})
+                self.assertEqual(response.status_code, 200)
+                results = response.json()["cases"]
+                self.assertTrue(results[0]["expected_answer"].startswith(expected))
+                self.assertEqual([result["status"] for result in results], ["passed"] * 3)
+
+        self.assertEqual(fetch_records.call_count, 2)
+        for index, snapshot in ((1, original), (6, edited)):
+            follow_up = json.loads(provider.call_args_list[index].args[0].content)
+            self.assertEqual(json.loads(follow_up["input"][-1]["output"]), snapshot)
+
+    def test_ambiguous_database_snapshot_blocks_run_before_provider_calls(self):
+        provider = Mock()
+        snapshot = snapshot_with(*SYNTHETIC_RECORDS, SYNTHETIC_RECORDS[0])
+        with local_api(provider) as api, patch(
+            "app.api.routes.evaluation.list_test_records_for_tool", return_value=snapshot
+        ):
+            response = api.post("/api/evaluation", json={"run": True})
+
+        self.assertEqual(response.status_code, 409)
+        self.assertIn("missing or duplicate", response.json()["detail"])
+        provider.assert_not_called()
+
+    def test_provider_error_has_no_answer_score(self):
+        provider = Mock(side_effect=[
+            httpx.ReadTimeout("simulated timeout"),
+            tool_response(function_call()),
+            model_response({"type": "output_text", "text": "Not found"}),
+            model_response({"type": "output_text", "text": "AUD $121"}),
+        ])
+        with local_api(provider) as api, patch(
+            "app.api.routes.evaluation.list_test_records_for_tool",
+            return_value=snapshot_with(*SYNTHETIC_RECORDS),
+        ):
+            response = api.post("/api/evaluation", json={"run": True})
+
+        self.assertEqual(response.status_code, 200)
+        largest, absent, general = response.json()["cases"]
+        self.assertEqual(largest["status"], "error")
+        self.assertIsNone(largest["answer_matched"])
+        self.assertIn("timed out", largest["error"])
+        self.assertEqual(absent["status"], "passed")
+        self.assertEqual(general["status"], "passed")
+
+    def test_loading_or_posting_without_confirmation_never_starts_evaluation(self):
+        provider = Mock()
+        with local_api(provider) as api, patch(
+            "app.api.routes.evaluation.list_test_records_for_tool"
+        ) as fetch_records:
+            self.assertEqual(api.get("/api/evaluation").status_code, 405)
+            self.assertEqual(api.post("/api/evaluation", json={"run": False}).status_code, 422)
+            plain_post = api.post("/api/evaluation", content='{"run":true}')
+            self.assertIn(plain_post.status_code, (415, 422))
+        fetch_records.assert_not_called()
+        provider.assert_not_called()
+
+
 class QuestionEndpointTests(TestCase):
+    def demo_database(self):
+        engine = create_engine(
+            "sqlite://", poolclass=StaticPool, connect_args={"check_same_thread": False}
+        )
+        self.addCleanup(engine.dispose)
+        TestRecord.__table__.create(engine)
+        return sessionmaker(bind=engine)
+
     def test_successful_request_is_trimmed_and_stateless(self):
         provider = Mock(return_value=model_response({"type": "output_text", "text": " Four. "}))
         with local_api(provider) as api:
@@ -183,12 +310,7 @@ class QuestionEndpointTests(TestCase):
         self.assertEqual(provider.call_count, 2)
 
     def test_provider_only_receives_approved_descriptions_and_page_gets_limit_notice(self):
-        engine = create_engine(
-            "sqlite://", poolclass=StaticPool, connect_args={"check_same_thread": False}
-        )
-        self.addCleanup(engine.dispose)
-        TestRecord.__table__.create(engine)
-        sessions = sessionmaker(bind=engine)
+        sessions = self.demo_database()
         unapproved = "FICTIONAL DEMO — An unapproved test description"
         with sessions.begin() as db:
             db.add(TestRecord(description=unapproved))
@@ -216,6 +338,63 @@ class QuestionEndpointTests(TestCase):
         self.assertTrue(result["truncated"])
         self.assertEqual(len(result["records"]), MAX_TOOL_RECORDS)
         self.assertEqual(set(result["records"]), set(SYNTHETIC_RECORDS))
+
+    def test_next_tool_call_sends_the_edited_amount_for_an_approved_demo_client(self):
+        sessions = self.demo_database()
+        original = SYNTHETIC_RECORDS[1]
+        changed = original.replace("$8,500", "$85,000")
+        with sessions.begin() as db:
+            db.add_all(TestRecord(description=description) for description in SYNTHETIC_RECORDS)
+            db.add(TestRecord(description=f"{changed} extra text outside the amount"))
+
+        def provider_reply(request):
+            body = json.loads(request.content)
+            if body["tool_choice"] == "auto":
+                return tool_response(function_call())
+            return model_response({"type": "output_text", "text": "Here are the matching goals."})
+
+        provider = Mock(side_effect=provider_reply)
+        question = {"question": "Which demo client has the largest savings target?"}
+        with local_api(provider) as api, patch("app.services.test_record_tool.SessionLocal", sessions):
+            first = api.post("/api/ask", json=question)
+            with sessions.begin() as db:
+                db.execute(
+                    update(TestRecord)
+                    .where(TestRecord.description == original)
+                    .values(description=changed)
+                )
+            second = api.post("/api/ask", json=question)
+
+        for response in (first, second):
+            self.assertEqual(response.status_code, 200)
+            self.assertTrue(response.json()["database_function_used"])
+        self.assertEqual(provider.call_count, 4)
+        first_result, second_result = (
+            json.loads(json.loads(provider.call_args_list[i].args[0].content)["input"][-1]["output"])
+            for i in (1, 3)
+        )
+        self.assertEqual(first_result["records"], list(SYNTHETIC_RECORDS))
+        self.assertEqual(second_result["records"], [
+            changed if description == original else description for description in SYNTHETIC_RECORDS
+        ])
+
+    def test_seed_preserves_edited_demo_target_and_skips_existing_rows(self):
+        sessions = self.demo_database()
+        original = SYNTHETIC_RECORDS[1]
+        changed = original.replace("$8,500", "$85,000")
+        with sessions.begin() as db:
+            db.add(TestRecord(description=changed))
+        with (
+            patch("app.seed_test_records.SessionLocal", sessions),
+            patch("app.seed_test_records.initialize_test_table"),
+        ):
+            self.assertEqual(seed_synthetic_records(), (4, 5))
+            self.assertEqual(seed_synthetic_records(), (0, 5))
+        with sessions() as db:
+            self.assertCountEqual(
+                db.scalars(select(TestRecord.description)).all(),
+                [changed if description == original else description for description in SYNTHETIC_RECORDS],
+            )
 
     def test_invalid_questions_do_not_reach_provider(self):
         provider = Mock()

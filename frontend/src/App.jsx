@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { askQuestion } from './api.js';
+import LabNav from './LabNav.jsx';
 
 const MAX_QUESTION_LENGTH = 4_000;
 
@@ -25,6 +26,7 @@ export default function App() {
 
   return (
     <main className="page-shell">
+      <LabNav page="ask" />
       <header className="page-header">
         <h1>Ask the model</h1>
         <p className="intro">Your question will be sent to OpenAI. Use a fictional example.</p>

@@ -16,13 +16,13 @@ class TestRecordRepository:
         """Return all rows ordered by identifier."""
         return list(self.db.scalars(select(TestRecord).order_by(TestRecord.id)))
 
-    def list_matching_descriptions(
-        self, descriptions: tuple[str, ...], *, limit: int | None = None
+    def list_descriptions_matching(
+        self, pattern: str, *, limit: int | None = None
     ) -> list[str]:
-        """Select only the requested descriptions in row order."""
+        """Select descriptions that match an application-defined pattern in row order."""
         statement = (
             select(TestRecord.description)
-            .where(TestRecord.description.in_(descriptions))
+            .where(TestRecord.description.regexp_match(pattern))
             .order_by(TestRecord.id)
         )
         if limit is not None:
