@@ -1,0 +1,8 @@
+Python
+C:\Paulo\Empresas\Projects\financial-advisor-ai-lab\backend
+.venv\Scripts\activate
+(.venv) C:\Paulo\Empresas\Projects\financial-advisor-ai-lab\backend>python -m uvicorn app.main:app --reload
+
+React
+PS C:\Paulo\Empresas\Projects\financial-advisor-ai-lab\frontend> npm.cmd run dev
+npm.cmd run dev
