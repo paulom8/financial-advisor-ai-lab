@@ -47,3 +47,11 @@ export async function runEvaluation() {
   }
   return data;
 }
+
+export async function askDocuments(question, retrieveOnly = false) {
+  const data = await postJson(retrieveOnly ? '/api/documents/retrieve' : '/api/documents/ask', { question });
+  if (!Array.isArray(data?.passages) || (!retrieveOnly && !['answered', 'not_covered', 'error'].includes(data.status))) {
+    throw new Error('The API returned an incomplete document result.');
+  }
+  return data;
+}

@@ -1,0 +1,7 @@
+# AI consulting services
+
+## Services offered
+The fictional company offers AI consulting to help businesses identify suitable opportunities for AI and combine business expertise with effective AI solutions.
+
+## Business process improvement
+Services include reviewing workflows, identifying repetitive tasks suitable for automation, integrating AI into existing processes and helping businesses improve productivity while retaining human oversight.
