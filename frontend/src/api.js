@@ -55,3 +55,12 @@ export async function askDocuments(question, retrieveOnly = false) {
   }
   return data;
 }
+
+export async function compareDocumentSearch(question) {
+  const data = await postJson('/api/documents/compare', { question });
+  if (!Array.isArray(data?.keyword_passages) || !Array.isArray(data?.semantic_passages) ||
+      typeof data?.embedding_model !== 'string') {
+    throw new Error('The API returned an incomplete search comparison.');
+  }
+  return data;
+}

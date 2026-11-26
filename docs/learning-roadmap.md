@@ -64,7 +64,7 @@ Status definitions: **Not started** = no experiment; **In progress** = current e
 | 8 | AI interaction and model capabilities | Explored | Sent a synthetic question and reviewed the returned text in the React page. |
 | 9 | Prompt engineering and instructions | Not started | |
 | 10 | Automation and workflows | Not started | |
-| 11 | Knowledge management, context and RAG | In progress | Temporary approved detour: keyword-based RAG completed and reviewed; embeddings and semantic similarity are next. |
+| 11 | Knowledge management, context and RAG | In progress | Temporary approved detour: keyword-based RAG and semantic retrieval completed and reviewed. Vector databases are next. |
 | 12 | Documents and multimodal AI | Not started | |
 | 13 | AI assistants and customisation | Not started | |
 | 14 | Reusable AI components, skills and templates | Not started | |
@@ -83,7 +83,7 @@ Status definitions: **Not started** = no experiment; **In progress** = current e
 ### Approved RAG learning sequence (temporary detour)
 
 1. Keyword-based RAG - Completed.
-2. Embeddings and semantic similarity - Not started (next).
+2. Embeddings and semantic similarity - Completed (26 November 2026). In live review, semantic search found Operating history for "How long has the company been in the market?"
 3. Vector databases - Not started.
 4. Hybrid search - Not started.
 5. Reranking - Not started.

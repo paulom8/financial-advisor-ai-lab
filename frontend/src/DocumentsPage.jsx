@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { askDocuments } from './api.js';
+import { askDocuments, compareDocumentSearch } from './api.js';
 import LabNav from './LabNav.jsx';
 
 const EXAMPLES = [
+  'How big is your team?',
   'How often does the demo policy review a savings goal?',
   'Is there a fee for changing a goal?',
   'Where is the company located?',
@@ -14,7 +15,47 @@ const EXAMPLES = [
   'What AI consulting services are offered?',
 ];
 
+function Passages({ passages, semantic = false }) {
+  if (passages.length === 0) return <p>No matching passages found.</p>;
+
+  return passages.map((p, index) => (
+    <div className="passage" key={p.id}>
+      <strong>{index + 1}. {p.document} - {p.section}</strong>
+      <p className="privacy-note">
+        {semantic ? `Cosine similarity: ${p.score.toFixed(3)}` : `Keyword score: ${p.score}`}
+      </p>
+      <p>{p.text}</p>
+    </div>
+  ));
+}
+
 function Result({ result }) {
+  if (result.mode === 'compare') {
+    return (
+      <article className="panel">
+        <h2>{result.question}</h2>
+        {result.error ? <p role="alert" className="error">{result.error}</p> : (
+          <>
+            <p className="privacy-note">
+              Embedding model: {result.embedding_model}. Cosine similarity ranks passages by how closely
+              their vectors align with the question vector. These scores use a different scale from keyword scores.
+            </p>
+            <div className="case-answers">
+              <section>
+                <h3>Keyword search ({result.keyword_passages.length})</h3>
+                <Passages passages={result.keyword_passages} />
+              </section>
+              <section>
+                <h3>Semantic search ({result.semantic_passages.length})</h3>
+                <Passages passages={result.semantic_passages} semantic />
+              </section>
+            </div>
+          </>
+        )}
+      </article>
+    );
+  }
+
   const cited = result.passages.filter((p) => result.citations?.includes(p.id));
   return (
     <article className="panel">
@@ -35,14 +76,7 @@ function Result({ result }) {
         </>
       )}
       <h3>Retrieved passages ({result.passages.length})</h3>
-      {result.retrievalFailed ? <p>Retrieval result unavailable.</p> : result.passages.length === 0 && <p>No matching passages found.</p>}
-      {result.passages.map((p) => (
-        <div className="passage" key={p.id}>
-          <strong>{p.document} — {p.section}</strong>
-          <p className="privacy-note">Keyword score: {p.score}</p>
-          <p>{p.text}</p>
-        </div>
-      ))}
+      {result.retrievalFailed ? <p>Retrieval result unavailable.</p> : <Passages passages={result.passages} />}
       <p className="panel-footer">Inspect the source passages separately from the answer; citations alone do not prove accuracy.</p>
     </article>
   );
@@ -54,17 +88,20 @@ export default function DocumentsPage() {
   const [busy, setBusy] = useState(false);
   const canSubmit = question.trim() && Array.from(question.trim()).length <= 4000 && !busy;
 
-  async function submit(event, retrieveOnly = false) {
+  async function submit(event, mode = 'answer') {
     event.preventDefault();
     if (!canSubmit) return;
     const submitted = question.trim();
     setQuestion('');
     setBusy(true);
     try {
-      const result = await askDocuments(submitted, retrieveOnly);
-      setHistory((previous) => [{ ...result, question: submitted, retrieveOnly }, ...previous]);
+      const retrieveOnly = mode === 'retrieve';
+      const result = mode === 'compare'
+        ? await compareDocumentSearch(submitted)
+        : await askDocuments(submitted, retrieveOnly);
+      setHistory((previous) => [{ ...result, question: submitted, mode, retrieveOnly }, ...previous]);
     } catch (error) {
-      setHistory((previous) => [{ question: submitted, retrieveOnly: false, status: 'error', error: error.message, passages: [], retrievalFailed: true }, ...previous]);
+      setHistory((previous) => [{ question: submitted, mode, status: 'error', error: error.message, passages: [], retrievalFailed: true }, ...previous]);
     } finally {
       setBusy(false);
     }
@@ -89,9 +126,10 @@ export default function DocumentsPage() {
         </details>
         <div className="document-actions">
           <button disabled={!canSubmit} type="submit">Ask the documents</button>
-          <button disabled={!canSubmit} type="button" onClick={(event) => submit(event, true)}>Retrieve passages only</button>
+          <button disabled={!canSubmit} type="button" onClick={(event) => submit(event, 'retrieve')}>Retrieve passages only</button>
+          <button disabled={!canSubmit} type="button" onClick={(event) => submit(event, 'compare')}>Compare keyword and semantic search</button>
         </div>
-        <p className="privacy-note">Use synthetic data only. Asking the documents may call OpenAI and incur API charges. Retrieval only is offline. Questions are independent; history stays on this page until refreshed.</p>
+        <p className="privacy-note">Use synthetic data only. Asking the documents and running the comparison may incur OpenAI API charges. Retrieve passages only runs offline.</p>
         <p role="status" className="privacy-note">{busy ? 'Processing question…' : ''}</p>
       </form>
       {history.map((result, index) => <Result key={history.length - index} result={result} />)}

@@ -25,11 +25,14 @@ NORMALIZE = {
 }
 
 
-class Passage(BaseModel):
+class DocumentSection(BaseModel):
     id: str
     document: str
     section: str
     text: str
+
+
+class Passage(DocumentSection):
     score: int
 
 
@@ -45,20 +48,30 @@ def terms(text: str) -> set[str]:
             if word not in STOP_WORDS or word == "where"}
 
 
-def retrieve(question: str) -> list[Passage]:
+def load_sections() -> list[DocumentSection]:
+    sections = []
+    for path in sorted(CORPUS.glob("*.txt")):
+        title, *chunks = re.split(r"^## ", path.read_text(encoding="utf-8-sig"), flags=re.M)
+        document = title.strip().removeprefix("# ")
+        for index, section in enumerate(chunks, 1):
+            heading, _, body = section.partition("\n")
+            sections.append(DocumentSection(id=f"{path.stem}:{index}", document=document,
+                                            section=heading.strip(), text=body.strip()))
+    return sections
+
+
+PASSAGE_LIMIT = 3
+
+
+def retrieve(question: str, sections: list[DocumentSection] | None = None) -> list[Passage]:
     """Rank individual sections by distinct matching terms, weighting headings."""
     query = terms(question)
     matches = []
-    for path in sorted(CORPUS.glob("*.txt")):
-        title, *sections = re.split(r"^## ", path.read_text(encoding="utf-8-sig"), flags=re.M)
-        document = title.strip().removeprefix("# ")
-        for index, section in enumerate(sections, 1):
-            heading, _, body = section.partition("\n")
-            score = 2 * len(query & terms(heading)) + len(query & terms(body))
-            if score:
-                matches.append(Passage(id=f"{path.stem}:{index}", document=document,
-                                       section=heading.strip(), text=body.strip(), score=score))
-    return sorted(matches, key=lambda passage: (-passage.score, passage.id))[:3]
+    for section in load_sections() if sections is None else sections:
+        score = 2 * len(query & terms(section.section)) + len(query & terms(section.text))
+        if score:
+            matches.append(Passage(**section.model_dump(), score=score))
+    return sorted(matches, key=lambda passage: (-passage.score, passage.id))[:PASSAGE_LIMIT]
 
 
 INSTRUCTIONS = """Answer only from the retrieved fictional passages in the input JSON.
