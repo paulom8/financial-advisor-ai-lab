@@ -38,6 +38,8 @@ Verification passed with 18 backend tests, nine frontend tests, and a frontend p
 
 **Vector databases - In progress.** pgvector 0.8.7 is enabled in PostgreSQL 18. The user seeded nine fictional passages with 1,536-dimensional embeddings. The document page can embed a new question and rank saved passages in PostgreSQL. Live review of the new search is pending.
 
+**RAG evaluation - In progress.** The documents page runs a direct employee question, a paraphrase and an unsupported fee question through keyword and saved-vector retrieval and the same model answer path. It checks retrieval and answers independently and displays the supporting citations. Live review is pending.
+
 ## Still to explore
 
 The roadmap tracks the remaining areas, including AI application architecture and deployment; MCP, connectors, and plugins; model evaluation and observability; security and governance; prompts; workflows; context and retrieval; multimodal inputs and outputs; assistants; reusable AI components; and agents.

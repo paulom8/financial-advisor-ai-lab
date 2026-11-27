@@ -14,6 +14,7 @@ from app.services.document_embeddings import (
     semantic_rank,
 )
 from app.services.document_rag import Passage, generate, load_sections, retrieve
+from app.services.rag_evaluation import RagEvaluationReport, evaluate_rag
 from app.services.document_vector_search import rank_saved_passages
 from app.services.openai_service import OpenAIServiceError
 
@@ -35,11 +36,10 @@ class VectorSearchResponse(BaseModel):
     embedding_model: str
 
 
-@router.post("/vector-search", response_model=VectorSearchResponse)
-async def search_saved_vectors(payload: QuestionRequest, request: Request):
+async def retrieve_saved_vectors(question, client):
     seed_message = "Run python -m app.seed_document_vectors from the backend folder to seed the passages."
     try:
-        (vector,) = await embed_texts([payload.question], request.state.openai_client)
+        (vector,) = await embed_texts([question], client)
         if len(vector) != EMBEDDING_DIMENSIONS:
             raise OpenAIServiceError("The embedding model returned an unexpected vector dimension.")
         passages = await run_in_threadpool(rank_saved_passages, vector)
@@ -52,7 +52,19 @@ async def search_saved_vectors(payload: QuestionRequest, request: Request):
         raise HTTPException(status_code=503, detail=detail) from exc
     if not passages:
         raise HTTPException(status_code=503, detail=seed_message)
+    return passages
+
+
+@router.post("/vector-search", response_model=VectorSearchResponse)
+async def search_saved_vectors(payload: QuestionRequest, request: Request):
+    passages = await retrieve_saved_vectors(payload.question, request.state.openai_client)
     return VectorSearchResponse(passages=passages, embedding_model=EMBEDDING_MODEL)
+
+
+@router.post("/evaluate", response_model=RagEvaluationReport)
+async def run_rag_evaluation(request: Request):
+    client = request.state.openai_client
+    return await evaluate_rag(client, lambda question: retrieve_saved_vectors(question, client))
 
 
 @router.post("/compare", response_model=ComparisonResponse)

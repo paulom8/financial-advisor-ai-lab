@@ -27,6 +27,7 @@ The React pages use Vite and npm. FastAPI exposes the following experiment route
 | `POST /api/documents/ask` | Retrieves the same passages and returns an answer, citation IDs, status and passages. | OpenAI (only when passages match). |
 | `POST /api/documents/compare` | Returns separate keyword and cosine similarity rankings for the same question and document sections. | OpenAI Embeddings API. |
 | `POST /api/documents/vector-search` | Embeds the question and returns the three closest saved passages by cosine similarity. | OpenAI Embeddings API and PostgreSQL with pgvector. |
+| `POST /api/documents/evaluate` | Runs three labelled questions through keyword and saved-vector retrieval and the shared answer generator. | OpenAI Embeddings and Responses APIs, PostgreSQL with pgvector. |
 
 Each submission sends one independent question. FastAPI reuses its OpenAI client across requests and sets `store=False` for both Responses API calls. Questions and answers stay out of PostgreSQL. The backend reads `OPENAI_API_KEY` and the optional `OPENAI_MODEL` at startup. The ignored backend environment file holds local credentials. See the [local setup instructions](../README.md#run-locally).
 
@@ -43,6 +44,8 @@ The approved RAG detour uses four synthetic text files in backend/app/documents.
 The comparison reads a single snapshot of the same sections for both rankings. Each comparison batches the question and section titles and text into one request to OpenAI's `text-embedding-3-small` model. Python computes cosine similarity in memory and returns the top three semantic results alongside the keyword results. Cosine scores rank candidates on their own scale and do not indicate whether the corpus supports an answer.
 
 The vector database experiment starts with an explicit `python -m app.seed_document_vectors` command. It embeds only the fictional document sections and refreshes the dedicated `document_embeddings` table in one PostgreSQL transaction. The table stores the passage ID, original text, source metadata, embedding model and pgvector value. This is separate from application startup. The saved-vector search embeds the question alone, filters the stored rows to the same model, and runs exact cosine distance ranking in PostgreSQL. Search results show the stored text and cosine similarity. Re-seed after document edits to refresh that snapshot.
+
+The RAG evaluation independently checks whether an expected passage appears in the retrieved results and whether the generated answer includes the expected fact and source. For a question outside the demo documents, retrieval is unscored and the answer must say the question is not covered. This is a fixed benchmark for the original fictional corpus. Its answer rules are lightweight checks for these cases. The report shows the answers and citations for review.
 
 ## Proposed architecture
 

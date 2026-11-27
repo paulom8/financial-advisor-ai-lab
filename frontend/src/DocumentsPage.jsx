@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { askDocuments, compareDocumentSearch, searchSavedVectors } from './api.js';
 import LabNav from './LabNav.jsx';
+import RagEvaluation from './RagEvaluation.jsx';
 
 const EXAMPLES = [
   'How big is your team?',
@@ -155,6 +156,7 @@ export default function DocumentsPage() {
         <p className="privacy-note">Use synthetic data only. Ask, compare and saved vector search may incur OpenAI API charges. Retrieve passages only runs offline.</p>
         <p role="status" className="privacy-note">{busy ? 'Processing question…' : ''}</p>
       </form>
+      <RagEvaluation />
       {history.map((result, index) => <Result key={history.length - index} result={result} />)}
     </main>
   );

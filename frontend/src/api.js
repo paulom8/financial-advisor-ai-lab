@@ -72,3 +72,11 @@ export async function searchSavedVectors(question) {
   }
   return data;
 }
+
+export async function runRagEvaluation() {
+  const data = await postJson('/api/documents/evaluate', {});
+  if (!Array.isArray(data?.cases)) {
+    throw new Error('The API returned an incomplete RAG evaluation.');
+  }
+  return data;
+}

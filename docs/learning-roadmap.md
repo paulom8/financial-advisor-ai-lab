@@ -87,7 +87,7 @@ Status definitions: **Not started** = no experiment; **In progress** = current e
 3. Vector databases - In progress. Nine demo passage embeddings are saved. The search ranks the stored passages in PostgreSQL. Live review is pending.
 4. Hybrid search - Not started.
 5. Reranking - Not started.
-6. RAG evaluation - Not started.
+6. RAG evaluation - In progress. Moved ahead of hybrid search and reranking to measure the current baseline first. Three cases compare keyword and saved-vector retrieval and answers. Live review is pending.
 7. Advanced and conversational RAG - Not started.
 
 Return to the industry-prioritised baseline after the approved detour.

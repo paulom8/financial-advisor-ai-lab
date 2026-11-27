@@ -26,6 +26,7 @@ The original React question page sends one synthetic question to `POST /api/ask`
 | [Ask the documents](http://localhost:5173/documents) | Keyword-based RAG | Retrieve passages without a model call, then ask the documents. Compare citations and answers; try a fee question to see missing evidence. |
 | [Ask the documents](http://localhost:5173/documents) | Embeddings and semantic similarity | Enter "How big is your team?" and select **Compare keyword and semantic search**. Look for the Employees passage in the ranked results. The comparison uses OpenAI embeddings. |
 | [Ask the documents](http://localhost:5173/documents) | Vector database | After seeding, enter "How long has the company been in the market?" and select **Search saved vectors**. PostgreSQL returns the three closest saved passages. |
+| [Ask the documents](http://localhost:5173/documents) | RAG evaluation | After seeding, select **Run RAG evaluation** to compare retrieval and answer checks for three fixed demo questions. |
 | [FastAPI interactive docs](http://localhost:8000/docs) | PostgreSQL read through FastAPI | Run `GET /api/test-records` to see the saved fictional records directly. |
 
 ## Run locally
