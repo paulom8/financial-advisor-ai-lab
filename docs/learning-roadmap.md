@@ -64,7 +64,7 @@ Status definitions: **Not started** = no experiment; **In progress** = current e
 | 8 | AI interaction and model capabilities | Explored | Sent a synthetic question and reviewed the returned text in the React page. |
 | 9 | Prompt engineering and instructions | Not started | |
 | 10 | Automation and workflows | Not started | |
-| 11 | Knowledge management, context and RAG | Not started | |
+| 11 | Knowledge management, context and RAG | In progress | Temporary approved detour: keyword-based RAG and semantic retrieval completed and reviewed. Vector databases are next. |
 | 12 | Documents and multimodal AI | Not started | |
 | 13 | AI assistants and customisation | Not started | |
 | 14 | Reusable AI components, skills and templates | Not started | |
@@ -77,3 +77,17 @@ Status definitions: **Not started** = no experiment; **In progress** = current e
 - **Question-flow regression review — Completed (20 November 2026).** Offline checks cover the SDK request, provider errors, validation and malformed responses. A live browser submission returned the expected answer to a fictional arithmetic question, and the database endpoint returned its sample row.
 - **Database function calling — Completed (22 November 2026).** Added a bounded `list_test_records` tool and an explicit seed command. The repeat seed added zero rows. Live examples confirmed that saved-record questions use the tool, absent clients are reported as absent from the result, and a general question answers directly. The React page displayed the database answer and badge. The final review restricted the tool to the approved fictional descriptions and verified the revised path with 11 backend tests, seven frontend tests, a production build, and live PostgreSQL and OpenAI checks. The user approved integration.
 - **Model evaluation — In progress (22 November 2026).** Added a separate page to check the expected tool use and answer for three preset questions. The expected winner comes from a PostgreSQL snapshot, so editing a target can change the result on the next run. This experiment uses the existing tool flow and gives later model or instruction changes a baseline to compare.
+
+- **Plain-text RAG - Completed (26 November 2026).** The user reviewed live Sunday and after-hours questions; both retrieved opening hours and main contact and generated correctly cited answers. The initial Saturday failure demonstrated a keyword matching limitation; weekend synonym normalization resolved the retrieval gap. Full backend integration verification remains environment-blocked.
+
+### Approved RAG learning sequence (temporary detour)
+
+1. Keyword-based RAG - Completed.
+2. Embeddings and semantic similarity - Completed (26 November 2026). In live review, semantic search found Operating history for "How long has the company been in the market?"
+3. Vector databases - In progress. Nine demo passage embeddings are saved. The search ranks the stored passages in PostgreSQL. Live review is pending.
+4. Hybrid search - Not started.
+5. Reranking - Not started.
+6. RAG evaluation - In progress. Moved ahead of hybrid search and reranking to measure the current baseline first. Three cases compare keyword and saved-vector retrieval and answers. Live review is pending.
+7. Advanced and conversational RAG - Not started.
+
+Return to the industry-prioritised baseline after the approved detour.

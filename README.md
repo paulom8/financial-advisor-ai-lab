@@ -14,7 +14,7 @@ An educational prototype for learning AI capabilities and how they are used in r
 
 ## Current status
 
-The React page sends one synthetic question to `POST /api/ask`. FastAPI calls the OpenAI Responses API and may execute one validated, read-only function to retrieve PostgreSQL `Test` records; React displays the answer and whether the function was used. Each question starts a fresh request. A separate `GET /api/test-records` endpoint reads the same table. See the [architecture](docs/architecture.md) and [learning roadmap](docs/learning-roadmap.md).
+The original React question page sends one synthetic question to `POST /api/ask`. FastAPI calls the OpenAI Responses API and may execute one validated, read-only function to retrieve PostgreSQL `Test` records; React displays the answer and whether the function was used. Each question starts a fresh request. A separate `GET /api/test-records` endpoint reads the same table. A separate document RAG page retrieves up to three plain-text sections and optionally sends only those sources to OpenAI. See the [architecture](docs/architecture.md) and [learning roadmap](docs/learning-roadmap.md).
 
 ## Learning pages
 
@@ -23,6 +23,10 @@ The React page sends one synthetic question to `POST /api/ask`. FastAPI calls th
 | [Ask the model](http://localhost:5173/) | Single question and answer | Ask “Explain compound interest.” Look for **Database function not used**. |
 | [Ask the model](http://localhost:5173/) | Function calling with PostgreSQL | Ask “Which demo client has the largest savings target?” Look for **Database function used**. |
 | [Evaluate the model](http://localhost:5173/evaluation) | Repeatable model evaluation | Run three preset questions. Compare expected and actual answers and see which questions used the database. Edit a fictional target to try a different expected winner. |
+| [Ask the documents](http://localhost:5173/documents) | Keyword-based RAG | Retrieve passages without a model call, then ask the documents. Compare citations and answers; try a fee question to see missing evidence. |
+| [Ask the documents](http://localhost:5173/documents) | Embeddings and semantic similarity | Enter "How big is your team?" and select **Compare keyword and semantic search**. Look for the Employees passage in the ranked results. The comparison uses OpenAI embeddings. |
+| [Ask the documents](http://localhost:5173/documents) | Vector database | After seeding, enter "How long has the company been in the market?" and select **Search saved vectors**. PostgreSQL returns the three closest saved passages. |
+| [Ask the documents](http://localhost:5173/documents) | RAG evaluation | After seeding, select **Run RAG evaluation** to compare retrieval and answer checks for three fixed demo questions. |
 | [FastAPI interactive docs](http://localhost:8000/docs) | PostgreSQL read through FastAPI | Run `GET /api/test-records` to see the saved fictional records directly. |
 
 ## Run locally
@@ -46,6 +50,14 @@ Pop-Location
 ```
 
 To try a change in PostgreSQL, edit only the amount after `AUD $` on one of the five demo descriptions, using a value such as `85,000` or `85000`. The next database lookup reads the new value.
+
+**Seed the vector database experiment.** With the pgvector extension installed and enabled in the lab database, run this from the project root. It sends the fictional document passages to OpenAI in one embedding request and refreshes the dedicated table. Run it again after changing the demo documents so searches use the new text.
+
+```powershell
+Push-Location backend
+.\.venv\Scripts\python.exe -m app.seed_document_vectors
+Pop-Location
+```
 
 **Daily startup on Windows.** Open two terminals in the project root and keep both running. In the first terminal, start FastAPI and wait for `Application startup complete`.
 

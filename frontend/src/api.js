@@ -47,3 +47,36 @@ export async function runEvaluation() {
   }
   return data;
 }
+
+export async function askDocuments(question, retrieveOnly = false) {
+  const data = await postJson(retrieveOnly ? '/api/documents/retrieve' : '/api/documents/ask', { question });
+  if (!Array.isArray(data?.passages) || (!retrieveOnly && !['answered', 'not_covered', 'error'].includes(data.status))) {
+    throw new Error('The API returned an incomplete document result.');
+  }
+  return data;
+}
+
+export async function compareDocumentSearch(question) {
+  const data = await postJson('/api/documents/compare', { question });
+  if (!Array.isArray(data?.keyword_passages) || !Array.isArray(data?.semantic_passages) ||
+      typeof data?.embedding_model !== 'string') {
+    throw new Error('The API returned an incomplete search comparison.');
+  }
+  return data;
+}
+
+export async function searchSavedVectors(question) {
+  const data = await postJson('/api/documents/vector-search', { question });
+  if (!Array.isArray(data?.passages) || typeof data?.embedding_model !== 'string') {
+    throw new Error('The API returned an incomplete vector search result.');
+  }
+  return data;
+}
+
+export async function runRagEvaluation() {
+  const data = await postJson('/api/documents/evaluate', {});
+  if (!Array.isArray(data?.cases)) {
+    throw new Error('The API returned an incomplete RAG evaluation.');
+  }
+  return data;
+}

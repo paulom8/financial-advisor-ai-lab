@@ -5,6 +5,7 @@ export default function LabNav({ page }) {
     <nav className="lab-nav" aria-label="Learning pages">
       <a href="/" aria-current={page === 'ask' ? 'page' : undefined}>Ask the model</a>
       <a href="/evaluation" aria-current={page === 'evaluation' ? 'page' : undefined}>Evaluate the model</a>
+      <a href="/documents" aria-current={page === 'documents' ? 'page' : undefined}>Ask the documents</a>
     </nav>
   );
 }

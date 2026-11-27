@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from openai import AsyncOpenAI
 
+from app.api.routes.documents import router as documents_router
 from app.api.routes.evaluation import router as evaluation_router
 from app.api.routes.questions import router as questions_router
 from app.api.routes.test_records import router as test_records_router
@@ -40,3 +41,4 @@ app.add_middleware(
 app.include_router(test_records_router)
 app.include_router(questions_router)
 app.include_router(evaluation_router)
+app.include_router(documents_router)

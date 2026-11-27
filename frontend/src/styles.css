@@ -124,3 +124,13 @@ button:disabled { opacity: .55; cursor: not-allowed; }
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+.document-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.passage { border-left: 3px solid #889b8c; padding: 10px 14px; margin: 12px 0; background: #f5f7f2; }
+.passage p { margin: 6px 0 0; }
+.contact-box { background: #e6f2e8; padding: 12px; border-radius: 9px; margin-bottom: 16px; }
+.contact-box p { margin-top: 0; }
+.contact-link { display: inline-block; background: #456f58; color: white; padding: 9px 13px; border-radius: 8px; }
+.example-questions { padding-left: 18px; }
+.example-questions button { color: #456f58; background: transparent; padding: 4px; text-align: left; text-decoration: underline; }
+.example-questions button:hover:not(:disabled) { background: #e6f2e8; }

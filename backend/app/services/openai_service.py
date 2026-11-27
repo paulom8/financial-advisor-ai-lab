@@ -131,17 +131,19 @@ async def _request_response(
     input_items: str | ResponseInputParam,
     *,
     tool_choice: Literal["auto", "none"],
+    instructions: str = INSTRUCTIONS,
+    include_tools: bool = True,
 ) -> Response:
     try:
         response = await client.responses.create(
             model=OPENAI_MODEL,
-            instructions=INSTRUCTIONS,
+            instructions=instructions,
             input=input_items,
             max_output_tokens=500,
             store=False,
-            tools=TOOLS,
-            tool_choice=tool_choice,
-            parallel_tool_calls=False,
+            tools=TOOLS if include_tools else omit,
+            tool_choice=tool_choice if include_tools else omit,
+            parallel_tool_calls=False if include_tools else omit,
             include=["reasoning.encrypted_content"] if tool_choice == "auto" else omit,
         )
     except AuthenticationError as exc:
