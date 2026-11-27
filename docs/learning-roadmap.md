@@ -84,7 +84,7 @@ Status definitions: **Not started** = no experiment; **In progress** = current e
 
 1. Keyword-based RAG - Completed.
 2. Embeddings and semantic similarity - Completed (26 November 2026). In live review, semantic search found Operating history for "How long has the company been in the market?"
-3. Vector databases - Not started.
+3. Vector databases - In progress. Nine demo passage embeddings are saved. The search ranks the stored passages in PostgreSQL. Live review is pending.
 4. Hybrid search - Not started.
 5. Reranking - Not started.
 6. RAG evaluation - Not started.

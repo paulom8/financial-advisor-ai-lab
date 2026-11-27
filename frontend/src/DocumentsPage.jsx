@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { askDocuments, compareDocumentSearch } from './api.js';
+import { askDocuments, compareDocumentSearch, searchSavedVectors } from './api.js';
 import LabNav from './LabNav.jsx';
 
 const EXAMPLES = [
@@ -30,6 +30,23 @@ function Passages({ passages, semantic = false }) {
 }
 
 function Result({ result }) {
+  if (result.mode === 'vectors') {
+    return (
+      <article className="panel">
+        <h2>{result.question}</h2>
+        <h3>Saved vector search</h3>
+        {result.error ? <p role="alert" className="error">{result.error}</p> : (
+          <>
+            <p className="privacy-note">
+              OpenAI embedded the question using {result.embedding_model}. PostgreSQL ranked the saved passages.
+            </p>
+            <Passages passages={result.passages} semantic />
+          </>
+        )}
+      </article>
+    );
+  }
+
   if (result.mode === 'compare') {
     return (
       <article className="panel">
@@ -96,9 +113,14 @@ export default function DocumentsPage() {
     setBusy(true);
     try {
       const retrieveOnly = mode === 'retrieve';
-      const result = mode === 'compare'
-        ? await compareDocumentSearch(submitted)
-        : await askDocuments(submitted, retrieveOnly);
+      let result;
+      if (mode === 'vectors') {
+        result = await searchSavedVectors(submitted);
+      } else if (mode === 'compare') {
+        result = await compareDocumentSearch(submitted);
+      } else {
+        result = await askDocuments(submitted, retrieveOnly);
+      }
       setHistory((previous) => [{ ...result, question: submitted, mode, retrieveOnly }, ...previous]);
     } catch (error) {
       setHistory((previous) => [{ question: submitted, mode, status: 'error', error: error.message, passages: [], retrievalFailed: true }, ...previous]);
@@ -128,8 +150,9 @@ export default function DocumentsPage() {
           <button disabled={!canSubmit} type="submit">Ask the documents</button>
           <button disabled={!canSubmit} type="button" onClick={(event) => submit(event, 'retrieve')}>Retrieve passages only</button>
           <button disabled={!canSubmit} type="button" onClick={(event) => submit(event, 'compare')}>Compare keyword and semantic search</button>
+          <button disabled={!canSubmit} type="button" onClick={(event) => submit(event, 'vectors')}>Search saved vectors</button>
         </div>
-        <p className="privacy-note">Use synthetic data only. Asking the documents and running the comparison may incur OpenAI API charges. Retrieve passages only runs offline.</p>
+        <p className="privacy-note">Use synthetic data only. Ask, compare and saved vector search may incur OpenAI API charges. Retrieve passages only runs offline.</p>
         <p role="status" className="privacy-note">{busy ? 'Processing question…' : ''}</p>
       </form>
       {history.map((result, index) => <Result key={history.length - index} result={result} />)}

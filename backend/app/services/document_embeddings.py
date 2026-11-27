@@ -8,21 +8,21 @@ from app.services.document_rag import PASSAGE_LIMIT, DocumentSection
 from app.services.openai_service import OpenAIServiceError
 
 EMBEDDING_MODEL = "text-embedding-3-small"
+EMBEDDING_DIMENSIONS = 1536
 
 
 class SemanticPassage(DocumentSection):
     score: float
 
 
-async def semantic_rank(
-    question: str, sections: list[DocumentSection], client: AsyncOpenAI | None,
-) -> list[SemanticPassage]:
-    if not sections:
-        return []
+def section_embedding_text(section: DocumentSection) -> str:
+    return f"{section.document}\n{section.section}\n{section.text}"
+
+
+async def embed_texts(inputs: list[str], client: AsyncOpenAI | None) -> list[list[float]]:
     if client is None:
         raise OpenAIServiceError("Set OPENAI_API_KEY in backend/.env and restart the backend.", 503)
 
-    inputs = [question, *(f"{s.document}\n{s.section}\n{s.text}" for s in sections)]
     try:
         response = await client.embeddings.create(
             model=EMBEDDING_MODEL, input=inputs, encoding_format="float",
@@ -41,8 +41,16 @@ async def semantic_rank(
         if len(item.embedding) != dimensions or not isfinite(norm) or norm == 0:
             raise OpenAIServiceError("OpenAI returned an invalid embedding vector.")
         normalized.append([value / norm for value in item.embedding])
+    return normalized
 
-    query, *passage_vectors = normalized
+
+async def semantic_rank(
+    question: str, sections: list[DocumentSection], client: AsyncOpenAI | None,
+) -> list[SemanticPassage]:
+    if not sections:
+        return []
+    inputs = [question, *(section_embedding_text(section) for section in sections)]
+    query, *passage_vectors = await embed_texts(inputs, client)
     ranked = []
     for section, vector in zip(sections, passage_vectors, strict=True):
         score = sum(left * right for left, right in zip(query, vector, strict=True))

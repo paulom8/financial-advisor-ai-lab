@@ -64,3 +64,11 @@ export async function compareDocumentSearch(question) {
   }
   return data;
 }
+
+export async function searchSavedVectors(question) {
+  const data = await postJson('/api/documents/vector-search', { question });
+  if (!Array.isArray(data?.passages) || typeof data?.embedding_model !== 'string') {
+    throw new Error('The API returned an incomplete vector search result.');
+  }
+  return data;
+}

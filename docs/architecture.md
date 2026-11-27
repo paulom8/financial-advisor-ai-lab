@@ -26,6 +26,7 @@ The React pages use Vite and npm. FastAPI exposes the following experiment route
 | `POST /api/documents/retrieve` | Ranks plain-text sections and returns up to three passages with scores. | Local files only. |
 | `POST /api/documents/ask` | Retrieves the same passages and returns an answer, citation IDs, status and passages. | OpenAI (only when passages match). |
 | `POST /api/documents/compare` | Returns separate keyword and cosine similarity rankings for the same question and document sections. | OpenAI Embeddings API. |
+| `POST /api/documents/vector-search` | Embeds the question and returns the three closest saved passages by cosine similarity. | OpenAI Embeddings API and PostgreSQL with pgvector. |
 
 Each submission sends one independent question. FastAPI reuses its OpenAI client across requests and sets `store=False` for both Responses API calls. Questions and answers stay out of PostgreSQL. The backend reads `OPENAI_API_KEY` and the optional `OPENAI_MODEL` at startup. The ignored backend environment file holds local credentials. See the [local setup instructions](../README.md#run-locally).
 
@@ -39,7 +40,9 @@ An evaluation run validates that its snapshot contains one record for each appro
 
 The approved RAG detour uses four synthetic text files in backend/app/documents. Headings define passage boundaries. A deterministic keyword overlap score weights headings twice as much as body text, with simple normalization and a three-passage limit. Keyword retrieval runs locally. Generation uses the existing SDK client, sends only the question and retrieved passages, requests structured answer status and source IDs, and validates that citations refer to retrieved passages. Review factual faithfulness against the displayed sources. Empty retrieval abstains locally. Insufficient evidence after retrieval requires model abstention. The page retains question results newest-first in memory and offers a fictional contact email link for unsupported questions.
 
-The comparison reads a single snapshot of the same sections for both rankings. Each comparison batches the question and section titles and text into one request to OpenAI's `text-embedding-3-small` model. Python computes cosine similarity in memory and returns the top three semantic results alongside the keyword results. Cosine scores rank candidates on their own scale and do not indicate whether the corpus supports an answer. Vector storage is a later experiment.
+The comparison reads a single snapshot of the same sections for both rankings. Each comparison batches the question and section titles and text into one request to OpenAI's `text-embedding-3-small` model. Python computes cosine similarity in memory and returns the top three semantic results alongside the keyword results. Cosine scores rank candidates on their own scale and do not indicate whether the corpus supports an answer.
+
+The vector database experiment starts with an explicit `python -m app.seed_document_vectors` command. It embeds only the fictional document sections and refreshes the dedicated `document_embeddings` table in one PostgreSQL transaction. The table stores the passage ID, original text, source metadata, embedding model and pgvector value. This is separate from application startup. The saved-vector search embeds the question alone, filters the stored rows to the same model, and runs exact cosine distance ranking in PostgreSQL. Search results show the stored text and cosine similarity. Re-seed after document edits to refresh that snapshot.
 
 ## Proposed architecture
 
